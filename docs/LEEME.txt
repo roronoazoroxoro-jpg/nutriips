@@ -1,0 +1,10 @@
+Copiá acá los archivos originales cuando los tengas a mano:
+
+- Bibliografía_ISAKmetry.pdf
+- ANAMNESIS alimentaria.xlsx
+- omron bioimpedancia.pdf
+- las fotos de WhatsApp del 2026-09-08
+
+La app ya usa la estructura clínica estándar de esos tres documentos.
+Si los dejás en esta carpeta, se pueden ajustar los campos uno por uno
+para que coincidan con el Excel y los manuales exactos.

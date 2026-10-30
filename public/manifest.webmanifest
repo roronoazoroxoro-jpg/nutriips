@@ -1,0 +1,33 @@
+{
+  "name": "NutriIPS · Consultorio de Nutrición",
+  "short_name": "NutriIPS",
+  "description": "Consultorio digital para nutricionistas del Departamento de Nutrición IPS.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0d1f18",
+  "theme_color": "#0d1f18",
+  "lang": "es-AR",
+  "categories": ["medical", "productivity", "health"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

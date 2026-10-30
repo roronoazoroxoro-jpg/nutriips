@@ -1,0 +1,148 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Nutritionist {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  license      String?
+  phone        String?
+  clinicName   String?
+  address      String?
+  mustChangePassword Boolean @default(false)
+  createdAt    DateTime @default(now())
+
+  patients     Patient[]
+  appointments Appointment[]
+}
+
+model Patient {
+  id             String   @id @default(cuid())
+  nutritionistId String?
+  nutritionist   Nutritionist? @relation(fields: [nutritionistId], references: [id], onDelete: Cascade)
+  fullName       String
+  dni            String?
+  sex            String
+  birthDate      String?
+  phone          String?
+  email          String?
+  occupation     String?
+  diagnosis      String?
+  diabetesType   String   @default("ninguna")
+  heightCm       Float?
+  createdAt      DateTime @default(now())
+
+  anamneses    Anamnesis[]
+  isak         IsakAssessment[]
+  omron        OmronReading[]
+  glucose      GlucoseReading[]
+  meals        MealEntry[]
+  labs         LabResult[]
+  plans        MealPlan[]
+  notes        ProgressNote[]
+  appointments Appointment[]
+
+  @@index([nutritionistId])
+}
+
+model Anamnesis {
+  id        String   @id @default(cuid())
+  patientId String
+  patient   Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  payload   String
+  createdAt DateTime @default(now())
+}
+
+model IsakAssessment {
+  id         String   @id @default(cuid())
+  patientId  String
+  patient    Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  measuredAt DateTime
+  payload    String
+  createdAt  DateTime @default(now())
+}
+
+model OmronReading {
+  id         String   @id @default(cuid())
+  patientId  String
+  patient    Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  measuredAt DateTime
+  payload    String
+  createdAt  DateTime @default(now())
+}
+
+model GlucoseReading {
+  id         String   @id @default(cuid())
+  patientId  String
+  patient    Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  value      Float
+  slot       String   @default("ayunas")
+  measuredAt DateTime @default(now())
+}
+
+model MealEntry {
+  id        String   @id @default(cuid())
+  patientId String
+  patient   Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  name      String
+  type      String
+  carbs     Float    @default(0)
+  protein   Float?
+  fat       Float?
+  sugar     Float?
+  calories  Float?
+  createdAt DateTime @default(now())
+}
+
+model LabResult {
+  id            String   @id @default(cuid())
+  patientId     String
+  patient       Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  glucose       Float?
+  hba1c         Float?
+  creatinine    Float?
+  ldl           Float?
+  triglycerides Float?
+  measuredAt    DateTime @default(now())
+}
+
+model MealPlan {
+  id        String   @id @default(cuid())
+  patientId String
+  patient   Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  payload   String
+  createdAt DateTime @default(now())
+}
+
+model ProgressNote {
+  id         String   @id @default(cuid())
+  patientId  String
+  patient    Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  visitDate  DateTime
+  summary    String
+  agreements String?
+  nextVisit  String?
+  createdAt  DateTime @default(now())
+}
+
+model Appointment {
+  id             String       @id @default(cuid())
+  nutritionistId String
+  nutritionist   Nutritionist @relation(fields: [nutritionistId], references: [id], onDelete: Cascade)
+  patientId      String
+  patient        Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  startsAt       DateTime
+  durationMin    Int          @default(45)
+  reason         String?
+  status         String       @default("programado")
+  createdAt      DateTime     @default(now())
+
+  @@index([nutritionistId, startsAt])
+}
