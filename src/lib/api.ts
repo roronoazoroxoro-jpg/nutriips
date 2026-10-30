@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { formatCie10Code, serializeDiagnosisCodes, type Cie10Selection } from "./cie10-shared";
 import { RANGES, ValidationError, optionalNumber, text } from "./validation";
 
 export function badRequest(message: string) {
@@ -39,6 +40,7 @@ export function patientData(body: Record<string, unknown>) {
   const email = text(body.email, 120);
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new ValidationError("El email del paciente no es válido");
   const diabetesType = String(body.diabetesType || "ninguna");
+  const diagnosisCodes = normalizeDiagnosisCodes(body.diagnosisCodes);
   return {
     fullName,
     dni: text(body.dni, 20),
@@ -48,7 +50,25 @@ export function patientData(body: Record<string, unknown>) {
     email,
     occupation: text(body.occupation, 120),
     diagnosis: text(body.diagnosis, 1000),
+    diagnosisCodes: diagnosisCodes.length ? serializeDiagnosisCodes(diagnosisCodes) : null,
     diabetesType: DIABETES.includes(diabetesType) ? diabetesType : "ninguna",
     heightCm: optionalNumber(body.heightCm, RANGES.heightCm),
   };
+}
+
+function normalizeDiagnosisCodes(raw: unknown): Cie10Selection[] {
+  if (!Array.isArray(raw)) return [];
+  const out: Cie10Selection[] = [];
+  const seen = new Set<string>();
+  for (const item of raw.slice(0, 20)) {
+    if (!item || typeof item !== "object") continue;
+    const code = formatCie10Code(String((item as Cie10Selection).code || ""));
+    const description = text((item as Cie10Selection).description, 240);
+    if (!code || !/^[A-Z][0-9]{2}/.test(code.replace(/\./g, ""))) continue;
+    const key = code.replace(/\./g, "");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ code, description: description || code });
+  }
+  return out;
 }

@@ -3,6 +3,7 @@ import { evaluateOmron, type OmronInput } from "./omron";
 import { nutritionSnapshot } from "./nutrition";
 import { buildAlerts, buildTrends } from "./insights";
 import type { MealPlanData } from "./plan";
+import { diagnosisLabelFromCodes, parseDiagnosisCodes } from "./cie10-shared";
 
 type Row = { id: string; measuredAt: Date; payload: string };
 
@@ -26,6 +27,7 @@ export function presentPatient(patient: {
   email: string | null;
   occupation: string | null;
   diagnosis: string | null;
+  diagnosisCodes?: string | null;
   diabetesType: string;
   heightCm: number | null;
   createdAt: Date;
@@ -64,6 +66,9 @@ export function presentPatient(patient: {
     return { id: row.id, measuredAt: iso(row.measuredAt), input, result: evaluateOmron(input, { sex, age, statureCm: patient.heightCm }) };
   });
 
+  const diagnosisCodes = parseDiagnosisCodes(patient.diagnosisCodes);
+  const diagnosisLabel = diagnosisLabelFromCodes(diagnosisCodes, patient.diagnosis);
+
   const base = {
     id: patient.id,
     fullName: patient.fullName,
@@ -75,6 +80,8 @@ export function presentPatient(patient: {
     email: patient.email,
     occupation: patient.occupation,
     diagnosis: patient.diagnosis,
+    diagnosisCodes,
+    diagnosisLabel,
     diabetesType: patient.diabetesType,
     heightCm: patient.heightCm,
     createdAt: iso(patient.createdAt),
@@ -135,7 +142,8 @@ export function summarizePatient(p: PresentedPatient) {
     phone: p.phone,
     sex: p.sex,
     age: p.age,
-    diagnosis: p.diagnosis,
+    diagnosis: p.diagnosisLabel || p.diagnosis,
+    diagnosisCodes: p.diagnosisCodes,
     diabetesType: p.diabetesType,
     createdAt: p.createdAt,
     weight: p.trends.weight.at(-1)?.value ?? null,

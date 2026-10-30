@@ -35,6 +35,7 @@ model Patient {
   email          String?
   occupation     String?
   diagnosis      String?
+  diagnosisCodes String?
   diabetesType   String   @default("ninguna")
   heightCm       Float?
   createdAt      DateTime @default(now())

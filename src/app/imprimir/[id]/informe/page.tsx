@@ -65,7 +65,19 @@ function Report({ patient: p, user }: NonNullable<ReturnType<typeof usePrintData
         <Field label="Talla" value={p.heightCm ? `${p.heightCm} cm` : "—"} />
         <Field label="Condición" value={diabetesLabel(p.diabetesType)} />
         <Field label="Fecha del informe" value={fmtDate(new Date())} />
-        {p.diagnosis && <Field label="Diagnóstico" value={p.diagnosis} wide />}
+        {p.diagnosisCodes?.length > 0 && (
+          <div className="col-span-2 mt-1">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-500">Diagnósticos CIE-10</p>
+            <ul className="mt-1 space-y-0.5">
+              {p.diagnosisCodes.map((item) => (
+                <li key={item.code}>
+                  <span className="font-semibold">{item.code}</span> · {item.description}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {p.diagnosis && <Field label={p.diagnosisCodes?.length ? "Detalle clínico" : "Diagnóstico"} value={p.diagnosis} wide />}
       </section>
 
       {rows.length > 0 && (

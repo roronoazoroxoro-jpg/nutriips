@@ -15,6 +15,7 @@
     "demo": "node scripts/demo.mjs",
     "video": "node scripts/video.mjs",
     "icons": "node scripts/make-icons.mjs",
+    "cie10:import": "node scripts/import-cie10.mjs",
     "postinstall": "prisma generate"
   },
   "dependencies": {

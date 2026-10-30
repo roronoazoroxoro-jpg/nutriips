@@ -80,9 +80,20 @@ Variables obligatorias en Vercel: `DATABASE_URL`, `AUTH_SECRET`.
 
 Tras el primer deploy, ejecutá el seed contra la base de producción (con `DATABASE_URL` apuntando a Neon).
 
+## CIE-10
+
+El sistema incluye el catálogo CIE-10 (~14.000 códigos en español). En alta/edición de paciente podés buscar por código o descripción y asignar uno o varios diagnósticos. Aparecen en la ficha, el listado y el informe imprimible.
+
+Para regenerar el catálogo desde la fuente:
+
+```bash
+# opcional: actualizar data/cie10-raw.csv
+npm run cie10:import
+```
+
 ## Qué incluye el sistema
 
-Inicio con alertas y turnos · Pacientes (Ctrl+K) · Resumen, evolución, consultas SOAP, anamnesis versionada, ISAK, Omron, laboratorio · Plan alimentario · Agenda · Informes imprimibles · Ajustes (membrete, clave, respaldo) · PWA instalable.
+Inicio con alertas y turnos · Pacientes (Ctrl+K) · Diagnósticos CIE-10 · Resumen, evolución, consultas SOAP, anamnesis versionada, ISAK, Omron, laboratorio · Plan alimentario · Agenda · Informes imprimibles · Ajustes (membrete, clave, respaldo) · PWA instalable.
 
 ## Comandos
 

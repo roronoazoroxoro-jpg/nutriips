@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import type { Cie10Selection } from "@/lib/cie10-shared";
+import { Cie10Picker } from "./Cie10Picker";
 import { Button, Input, Select, Textarea } from "./ui";
 
 export type PatientFormValues = {
@@ -14,6 +16,7 @@ export type PatientFormValues = {
   occupation: string;
   diabetesType: string;
   diagnosis: string;
+  diagnosisCodes: Cie10Selection[];
 };
 
 export const EMPTY_PATIENT: PatientFormValues = {
@@ -27,6 +30,7 @@ export const EMPTY_PATIENT: PatientFormValues = {
   occupation: "",
   diabetesType: "ninguna",
   diagnosis: "",
+  diagnosisCodes: [],
 };
 
 export function PatientForm({
@@ -91,7 +95,13 @@ export function PatientForm({
           <option value="tipo 2">Tipo 2</option>
           <option value="gestacional">Gestacional</option>
         </Select>
-        <Textarea label="Diagnóstico o motivo de consulta" value={values.diagnosis} onChange={set("diagnosis")} placeholder="Ej.: sobrepeso, hipotiroidismo, dislipemia..." />
+        <Cie10Picker value={values.diagnosisCodes} onChange={(diagnosisCodes) => setValues((v) => ({ ...v, diagnosisCodes }))} />
+        <Textarea
+          label="Detalle clínico / motivo de consulta"
+          value={values.diagnosis}
+          onChange={set("diagnosis")}
+          placeholder="Notas adicionales (opcional). El diagnóstico codificado se elige arriba con CIE-10."
+        />
       </fieldset>
       {error && <p className="rounded-xl bg-red-50 px-3 py-2.5 text-sm text-red-700">{error}</p>}
       <div className="flex justify-end gap-2">
@@ -109,5 +119,9 @@ export function PatientForm({
 }
 
 export function toPatientPayload(values: PatientFormValues) {
-  return { ...values, heightCm: values.heightCm ? Number(values.heightCm) : null };
+  return {
+    ...values,
+    heightCm: values.heightCm ? Number(values.heightCm) : null,
+    diagnosisCodes: values.diagnosisCodes,
+  };
 }

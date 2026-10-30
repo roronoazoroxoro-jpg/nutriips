@@ -171,6 +171,11 @@ export function PatientWorkspace({ patientId }: { patientId: string }) {
             </div>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {patient.diabetesType !== "ninguna" && <Badge tone="info">{diabetesLabel(patient.diabetesType)}</Badge>}
+              {(patient.diagnosisCodes ?? []).slice(0, 4).map((item) => (
+                <span key={item.code} title={item.description}>
+                  <Badge tone="neutral">{item.code}</Badge>
+                </span>
+              ))}
               {highAlerts > 0 && <Badge tone="mid">{highAlerts} {highAlerts === 1 ? "alerta" : "alertas"}</Badge>}
               {next && <Badge tone="good">Próximo turno: {fmtDateTime(next.startsAt)}</Badge>}
             </div>
@@ -245,6 +250,7 @@ export function PatientWorkspace({ patientId }: { patientId: string }) {
             occupation: patient.occupation ?? "",
             diabetesType: patient.diabetesType,
             diagnosis: patient.diagnosis ?? "",
+            diagnosisCodes: patient.diagnosisCodes ?? [],
           }}
           submitLabel="Guardar cambios"
           onCancel={() => setEditing(false)}

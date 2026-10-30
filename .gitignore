@@ -12,5 +12,9 @@ entregables/credenciales*.csv
 .vercel
 playwright-report
 test-results
+data/cie10-raw.csv
+data/codiesp.zip
 
 tsconfig.tsbuildinfo
+.vercel
+.env*

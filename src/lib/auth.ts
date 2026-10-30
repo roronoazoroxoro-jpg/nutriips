@@ -31,7 +31,8 @@ export function sessionCookie(token: string) {
     options: {
       httpOnly: true,
       sameSite: "lax" as const,
-      secure: process.env.COOKIE_SECURE === "true" || process.env.VERCEL === "1" || process.env.NODE_ENV === "production",
+      // Solo HTTPS real (Vercel / COOKIE_SECURE). En `npm start` local sobre http://localhost la cookie Secure no se guarda.
+      secure: process.env.COOKIE_SECURE === "true" || process.env.VERCEL === "1",
       path: "/",
       maxAge: 60 * 60 * 24 * SESSION_DAYS,
     },

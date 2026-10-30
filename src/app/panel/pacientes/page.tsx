@@ -35,7 +35,13 @@ export default function PatientsPage() {
   const list = useMemo(() => {
     const q = normalize(query.trim());
     const rows = (patients ?? []).filter((p) => {
-      if (q && !normalize(`${p.fullName} ${p.dni ?? ""} ${p.phone ?? ""} ${p.diagnosis ?? ""}`).includes(q)) return false;
+      if (
+        q &&
+        !normalize(
+          `${p.fullName} ${p.dni ?? ""} ${p.phone ?? ""} ${p.diagnosis ?? ""} ${(p.diagnosisCodes ?? []).map((c) => `${c.code} ${c.description}`).join(" ")}`
+        ).includes(q)
+      )
+        return false;
       if (filter === "alertas") return p.alerts > 0;
       if (filter === "diabetes") return p.diabetesType !== "ninguna";
       if (filter === "pendientes") return !p.lastVisit || Date.now() - new Date(p.lastVisit).getTime() > 60 * 86_400_000;
