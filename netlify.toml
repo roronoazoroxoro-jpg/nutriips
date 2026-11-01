@@ -1,8 +1,5 @@
 [build]
   command = "npx prisma generate && npm run build"
-  # Must NOT be ".next" — the Next plugin swaps this folder on publish.
-  # On Windows, renaming ".next" fails; use a dedicated publish dir.
-  publish = "out"
 
 [build.environment]
   NODE_VERSION = "20"

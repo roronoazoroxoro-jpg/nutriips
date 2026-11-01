@@ -12,7 +12,7 @@ echo  "Instalar aplicacion" cuando aparezca.
 echo.
 
 REM URL de produccion (se actualiza al desplegar en Vercel)
-set URL=https://nutriips.vercel.app/
+set URL=https://nutriips-ips.netlify.app/
 
 where msedge >nul 2>nul
 if %ERRORLEVEL%==0 (

@@ -56,5 +56,5 @@ npm run db:staff
 
 ## 5. Comprobar
 
-Abrí `https://TU-SITIO.netlify.app/api/health`  
+Abrí `https://nutriips-ips.netlify.app/api/health`  
 Debe responder `"ok": true` y `database.ok: true`.
