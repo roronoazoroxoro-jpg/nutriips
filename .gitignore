@@ -8,8 +8,10 @@ prisma/dev.db-journal
 respaldos
 video
 entregables/credenciales*.csv
+entregables/full-export.json
 *.csv
 .vercel
+.netlify
 playwright-report
 test-results
 data/cie10-raw.csv
@@ -18,3 +20,10 @@ data/codiesp.zip
 tsconfig.tsbuildinfo
 .vercel
 .env*
+.neon
+
+.netlify/
+*.log
+netlify-*-update.json
+netlify-accounts.json
+

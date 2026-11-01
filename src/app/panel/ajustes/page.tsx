@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BadgeCheck, Download, KeyRound, ShieldCheck, UserRound } from "lucide-react";
+import { KeyRound, UserRound } from "lucide-react";
 import { api } from "@/lib/client";
 import { useSession, type User } from "@/components/session";
 import { useToast } from "@/components/toast";
+import { LocalBackupCard } from "@/components/LocalBackup";
 import { Button, Card, CardHeader, Input, PageHeader, Spinner } from "@/components/ui";
 
 export default function SettingsPage() {
@@ -19,7 +20,7 @@ export default function SettingsPage() {
           <ProfileCard user={user} />
           <div className="space-y-6">
             <PasswordCard />
-            <BackupCard />
+            <LocalBackupCard />
           </div>
         </div>
       )}
@@ -129,29 +130,6 @@ function PasswordCard() {
           </Button>
         </div>
       </form>
-    </Card>
-  );
-}
-
-function BackupCard() {
-  return (
-    <Card>
-      <CardHeader icon={<ShieldCheck className="h-4 w-4" />} title="Respaldo de datos" subtitle="Tus pacientes se guardan en este equipo" />
-      <div className="space-y-3 p-5 text-sm text-ink-700">
-        <p>Descargá una copia completa (pacientes, consultas, mediciones, planes y turnos) en formato JSON. Guardala en un pendrive o en la nube.</p>
-        <ul className="space-y-1.5 text-xs text-ink-600">
-          <li className="flex gap-2">
-            <BadgeCheck className="h-4 w-4 shrink-0 text-leaf-600" /> Recomendado: una vez por semana y antes de cambiar de computadora.
-          </li>
-          <li className="flex gap-2">
-            <BadgeCheck className="h-4 w-4 shrink-0 text-leaf-600" /> También podés ejecutar <code className="rounded bg-sand-100 px-1">npm run backup</code> para copiar la base completa.
-          </li>
-        </ul>
-        <a href="/api/backup" className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-ink-900 text-sm font-semibold text-white shadow-sm hover:bg-ink-800">
-          <Download className="h-4 w-4" />
-          Descargar respaldo
-        </a>
-      </div>
     </Card>
   );
 }

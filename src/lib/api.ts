@@ -22,6 +22,16 @@ export async function readJson<T = Record<string, unknown>>(request: Request): P
 export function handleError(error: unknown) {
   if (error instanceof ValidationError) return badRequest(error.message);
   console.error(error);
+  const message = error instanceof Error ? error.message : "";
+  if (/Can't reach database|P1001|P1002|P1017|ECONNREFUSED|timeout/i.test(message)) {
+    return NextResponse.json(
+      { error: "No hay conexión con la base de datos. Revisá DATABASE_URL / DIRECT_URL o el estado de Neon." },
+      { status: 503 }
+    );
+  }
+  if (/Unique constraint|P2002/i.test(message)) {
+    return badRequest("Ese dato ya existe (por ejemplo un email o DNI duplicado).");
+  }
   return NextResponse.json({ error: "Ocurrió un error inesperado. Probá de nuevo." }, { status: 500 });
 }
 

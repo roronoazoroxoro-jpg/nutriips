@@ -1,0 +1,19 @@
+[build]
+  command = "npx prisma generate && npm run build"
+  # Must NOT be ".next" — the Next plugin swaps this folder on publish.
+  # On Windows, renaming ".next" fails; use a dedicated publish dir.
+  publish = "out"
+
+[build.environment]
+  NODE_VERSION = "20"
+  NETLIFY_NEXT_PLUGIN_SKIP = "false"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Variables obligatorias en Netlify → Site settings → Environment variables:
+# DATABASE_URL   = connection string POOLED de Neon (…-pooler… / ?sslmode=require)
+# DIRECT_URL     = connection string DIRECTA de Neon (sin pooler)
+# AUTH_SECRET    = cadena larga aleatoria
+# COOKIE_SECURE  = true
+# CLINIC_NAME    = Departamento de Nutrición · IPS
