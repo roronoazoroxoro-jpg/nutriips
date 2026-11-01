@@ -234,7 +234,7 @@ export function PatientWorkspace({ patientId }: { patientId: string }) {
         {tab === "isak" && <IsakTab patient={patient} save={save} remove={remove} />}
         {tab === "omron" && <OmronTab patient={patient} save={save} remove={remove} />}
         {tab === "laboratorio" && <LabsTab patient={patient} save={save} remove={remove} />}
-        {tab === "plan" && <PlanTab patient={patient} save={save} remove={remove} />}
+        {tab === "plan" && <PlanTab patient={patient} save={save} remove={remove} onPatientUpdate={setPatient} />}
       </div>
 
       <Modal open={editing} onClose={() => setEditing(false)} title="Editar ficha" description={patient.fullName} size="lg">

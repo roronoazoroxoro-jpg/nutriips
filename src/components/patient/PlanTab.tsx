@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, Calculator, Plus, Printer, RotateCcw, Salad, Sparkles, Trash2, Wand2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Calculator, Mail, Plus, Printer, RotateCcw, Salad, Sparkles, Trash2, Wand2 } from "lucide-react";
 import { ACTIVITY, GOALS, energyTarget, macroGrams, newMeal, suggestedPlan, type MealPlanData } from "@/lib/plan";
 import { fmtDate, fmtNumber } from "@/lib/format";
 import { Badge, Button, Card, CardHeader, Input, Select, Textarea, cx } from "../ui";
 import { HistoryCard, type Patient, type RemoveFn, type SaveFn } from "./shared";
+import { SendPlanEmailModal } from "./SendPlanEmailModal";
 
 function buildSuggestion(patient: Patient) {
   const lab = patient.labs[0];
@@ -35,13 +36,24 @@ function buildSuggestion(patient: Patient) {
   return { plan, reasons };
 }
 
-export function PlanTab({ patient, save, remove }: { patient: Patient; save: SaveFn; remove: RemoveFn }) {
+export function PlanTab({
+  patient,
+  save,
+  remove,
+  onPatientUpdate,
+}: {
+  patient: Patient;
+  save: SaveFn;
+  remove: RemoveFn;
+  onPatientUpdate?: (patient: Patient) => void;
+}) {
   const saved = patient.plans[0];
   const suggestion = useMemo(() => buildSuggestion(patient), [patient]);
   const [plan, setPlan] = useState<MealPlanData>(() => saved?.plan ?? suggestion.plan);
   const [shoppingText, setShoppingText] = useState(() => (saved?.plan ?? suggestion.plan).shopping.join("\n"));
   const [dirty, setDirty] = useState(!saved);
   const [loading, setLoading] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
 
   const weight = patient.trends.weight.at(-1)?.value ?? null;
   const energy = energyTarget({ sex: patient.sex, age: patient.age, weightKg: weight, statureCm: patient.heightCm, activity: plan.activity, goal: plan.goal });
@@ -275,12 +287,30 @@ export function PlanTab({ patient, save, remove }: { patient: Patient; save: Sav
                 <Printer className="h-4 w-4" />
                 Imprimir para el paciente
               </Link>
-              {dirty && saved && <p className="text-xs text-amber-700">Hay cambios sin guardar. La impresión usa la última versión guardada.</p>}
+              <Button
+                variant="secondary"
+                className="w-full"
+                icon={<Mail className="h-4 w-4" />}
+                disabled={!saved}
+                onClick={() => setEmailOpen(true)}
+              >
+                Enviar por Gmail
+              </Button>
+              {dirty && saved && <p className="text-xs text-amber-700">Hay cambios sin guardar. El mail y la impresión usan la última versión guardada.</p>}
               <Button variant="ghost" size="sm" className="w-full" icon={<RotateCcw className="h-3.5 w-3.5" />} onClick={() => load(buildSuggestion(patient).plan)}>
                 Regenerar propuesta automática
               </Button>
             </div>
           </Card>
+
+          <SendPlanEmailModal
+            open={emailOpen}
+            onClose={() => setEmailOpen(false)}
+            patient={patient}
+            defaultTips={saved?.plan?.recommendations || plan.recommendations}
+            hasPlan={Boolean(saved?.plan)}
+            onSent={(next) => onPatientUpdate?.(next)}
+          />
 
           <HistoryCard
             title="Versiones del plan"

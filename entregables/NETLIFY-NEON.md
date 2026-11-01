@@ -45,8 +45,22 @@ npm run db:staff
 | `AUTH_SECRET` | cadena larga aleatoria |
 | `COOKIE_SECURE` | `true` |
 | `CLINIC_NAME` | `Departamento de Nutrición · IPS` |
+| `SMTP_HOST` | `smtp.gmail.com` |
+| `SMTP_PORT` | `465` |
+| `SMTP_SECURE` | `true` |
+| `SMTP_USER` | Gmail del departamento |
+| `SMTP_PASS` | Contraseña de aplicación de Gmail |
+| `MAIL_FROM_NAME` | `Departamento de Nutrición · IPS` |
 
 5. Deploy.
+
+## 3b. Correo a pacientes (Gmail)
+
+1. En la cuenta Gmail del departamento activá **verificación en 2 pasos**.
+2. Creá una **contraseña de aplicaciones**: https://myaccount.google.com/apppasswords  
+   Nombre: `NutriIPS`.
+3. Pegá esa clave en `SMTP_PASS` (local `.env` y Netlify).
+4. En la ficha del paciente → **Plan alimentario** → **Enviar por Gmail**.
 
 ## 4. Datos en la PC de cada nutricionista
 
