@@ -11,7 +11,11 @@ export type User = {
   phone: string | null;
   clinicName: string | null;
   address: string | null;
+  title: string | null;
+  role: "nutritionist" | "chief" | "technical";
+  technical: boolean;
   mustChangePassword: boolean;
+  avatarUrl?: string | null;
 };
 
 type Session = { user: User | null; setUser: (user: User) => void };

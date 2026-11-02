@@ -1,77 +1,111 @@
 [
   {
+    "name": "Valentina Vallejos",
+    "phone": "3764350606",
+    "email": "valentinavallejos47@gmail.com",
+    "title": "Lic. en Nutrición",
+    "role": "nutritionist"
+  },
+  {
+    "name": "Melgarejo María Laura",
+    "phone": "",
+    "email": "nutricionistamelgareji@gmail.com",
+    "title": "Lic. en Nutrición · Jefa Departamento de Nutrición",
+    "license": "079",
+    "role": "chief"
+  },
+  {
     "name": "Carolina Julián",
     "phone": "3764766402",
-    "email": "juliancarolina_pos@ucp.edu.ar"
+    "email": "juliancarolina_pos@ucp.edu.ar",
+    "title": "Lic. en Nutrición"
   },
   {
     "name": "Do Nascimento Débora Nahir",
     "phone": "3764660183",
-    "email": "lic.dndebora@gmail.com"
+    "email": "lic.dndebora@gmail.com",
+    "title": "Lic. en Nutrición"
   },
   {
     "name": "Maira Melina Silvero",
     "phone": "3764558586",
-    "email": "mayramelinasilvero@gmail.com"
+    "email": "mayramelinasilvero@gmail.com",
+    "title": "Lic. en Nutrición"
   },
   {
     "name": "Manzias Lorena Elizabeth",
     "phone": "3764835594",
-    "email": "lorenq1913@gmail.com"
-  },
-  {
-    "name": "Valentina Vallejos",
-    "phone": "3764350606",
-    "email": "valentinavallejos47@gmail.com"
+    "email": "lorenq1913@gmail.com",
+    "title": "Lic. en Nutrición"
   },
   {
     "name": "Constanza Selene Trinidad",
     "phone": "3764169459",
-    "email": "constanzatrinidad0@gmail.com"
+    "email": "constanzatrinidad0@gmail.com",
+    "title": "Lic. en Nutrición"
   },
   {
     "name": "Rospigliosi Nava Claudia Fernanda",
     "phone": "3764685357",
-    "email": "claudiarospigliosi01@gmail.com"
+    "email": "claudiarospigliosi01@gmail.com",
+    "title": "Lic. en Nutrición"
   },
   {
     "name": "Alfredo Armando Sanabria",
     "phone": "3764216637",
-    "email": "armandosanabria91@gmail.com"
+    "email": "armandosanabria91@gmail.com",
+    "title": "Lic. en Nutrición"
   },
   {
     "name": "Cáceres Lorena Alejandra",
     "phone": "34365025",
-    "email": "lore.a.caceres@gmail.com"
+    "email": "lore.a.caceres@gmail.com",
+    "title": "Lic. en Nutrición"
   },
   {
     "name": "Spaciuk Flavia Anabella",
     "phone": "3764299671",
-    "email": "flaviaspaciuk@gmail.com"
+    "email": "flaviaspaciuk@gmail.com",
+    "title": "Lic. en Nutrición"
   },
   {
     "name": "García María Macarena",
     "phone": "3764819222",
-    "email": "lic.garciamacarena@gmail.com"
+    "email": "lic.garciamacarena@gmail.com",
+    "title": "Lic. en Nutrición"
   },
   {
     "name": "Bennesch Gisela Alejandra",
     "phone": "3764709398",
-    "email": "gisebennesch@gmail.com"
+    "email": "gisebennesch@gmail.com",
+    "title": "Lic. en Nutrición"
   },
   {
     "name": "Milena Ruth Cabaña",
     "phone": "3764254989",
-    "email": "milenaruthcabana@gmail.com"
+    "email": "milenaruthcabana@gmail.com",
+    "title": "Lic. en Nutrición"
   },
   {
     "name": "Laura Gisela Gomez",
     "phone": "3764560595",
-    "email": "nutricionista.lauragomez@gmail.com"
+    "email": "nutricionista.lauragomez@gmail.com",
+    "title": "Lic. en Nutrición"
   },
   {
     "name": "Nancy Elizabeth Skrypzuk",
     "phone": "3764844655",
-    "email": "nancyskrypzuk@gmail.com"
+    "email": "nancyskrypzuk@gmail.com",
+    "title": "Lic. en Nutrición"
+  },
+  {
+    "name": "Vázquez Valentín",
+    "phone": "3765026029",
+    "email": "valentin.vazquez@nutriips.local",
+    "title": "Programador · encargado de mantenimiento",
+    "area": "Área de Informática",
+    "manager": "Raúl Falero",
+    "technical": true,
+    "role": "technical"
   }
 ]

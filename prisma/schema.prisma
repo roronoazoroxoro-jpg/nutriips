@@ -11,19 +11,31 @@ datasource db {
 }
 
 model Nutritionist {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  name         String
-  passwordHash String
-  license      String?
-  phone        String?
-  clinicName   String?
-  address      String?
-  mustChangePassword Boolean @default(false)
-  createdAt    DateTime @default(now())
+  id                 String   @id @default(cuid())
+  email              String   @unique
+  name               String
+  passwordHash       String
+  license            String?
+  phone              String?
+  clinicName         String?
+  address            String?
+  title              String?
+  area               String?
+  manager            String?
+  role               String   @default("nutritionist") // nutritionist | chief | technical
+  technical          Boolean  @default(false)
+  mustChangePassword Boolean  @default(false)
+  avatarBytes        Bytes?
+  avatarMime         String?
+  avatarAt           DateTime?
+  createdAt          DateTime @default(now())
 
-  patients     Patient[]
-  appointments Appointment[]
+  patients              Patient[]
+  appointments          Appointment[]
+  notifications         Notification[]
+  activityLogs          ActivityLog[]        @relation("ActivityActor")
+  referralsAssigned     Referral[]           @relation("ReferralAssignedTo")
+  referralsCreated      Referral[]           @relation("ReferralAssignedBy")
 }
 
 model Patient {
@@ -52,6 +64,7 @@ model Patient {
   plans        MealPlan[]
   notes        ProgressNote[]
   appointments Appointment[]
+  referrals    Referral[]
 
   @@index([nutritionistId])
 }
@@ -149,4 +162,60 @@ model Appointment {
   createdAt      DateTime     @default(now())
 
   @@index([nutritionistId, startsAt])
+}
+
+model Referral {
+  id               String        @id @default(cuid())
+  fullName         String
+  dni              String?
+  birthDate        String?
+  phone            String?
+  affiliateNumber  String?
+  sex              String        @default("femenino")
+  reason           String?
+  status           String        @default("pendiente") // pendiente | asignado | presente | ausente | cancelado
+  notes            String?
+  scheduledAt      DateTime?
+  durationMin      Int           @default(45)
+  patientId        String?
+  patient          Patient?      @relation(fields: [patientId], references: [id], onDelete: SetNull)
+  assignedToId     String?
+  assignedTo       Nutritionist? @relation("ReferralAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+  assignedById     String
+  assignedBy       Nutritionist  @relation("ReferralAssignedBy", fields: [assignedById], references: [id], onDelete: Cascade)
+  appointmentId    String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@index([scheduledAt])
+  @@index([assignedToId, scheduledAt])
+  @@index([status])
+}
+
+model Notification {
+  id             String       @id @default(cuid())
+  nutritionistId String
+  nutritionist   Nutritionist @relation(fields: [nutritionistId], references: [id], onDelete: Cascade)
+  type           String
+  title          String
+  body           String
+  href           String?
+  read           Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+
+  @@index([nutritionistId, read, createdAt])
+}
+
+model ActivityLog {
+  id        String       @id @default(cuid())
+  actorId   String
+  actor     Nutritionist @relation("ActivityActor", fields: [actorId], references: [id], onDelete: Cascade)
+  action    String
+  entity    String
+  entityId  String?
+  detail    String?
+  createdAt DateTime     @default(now())
+
+  @@index([createdAt])
+  @@index([actorId, createdAt])
 }

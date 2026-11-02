@@ -3,18 +3,21 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { CalendarDays, Home, LogOut, Menu, Search, Settings, Users, X, UserPlus, ArrowRight } from "lucide-react";
+import { CalendarDays, FolderKanban, Home, LogOut, Menu, Search, Settings, Shield, Users, X, UserPlus, ArrowRight } from "lucide-react";
 import { api } from "@/lib/client";
 import type { PatientSummary } from "@/lib/patient";
 import { useSession } from "./session";
 import { Avatar, Button, Input, Modal, cx } from "./ui";
 import { useToast } from "./toast";
 import { Logo } from "./Logo";
+import { NotificationBell } from "./NotificationBell";
 
-const NAV = [
+const BASE_NAV = [
   { href: "/panel", label: "Inicio", icon: Home, exact: true },
   { href: "/panel/pacientes", label: "Pacientes", icon: Users },
   { href: "/panel/agenda", label: "Agenda", icon: CalendarDays },
+  { href: "/panel/compartido", label: "Panel compartido", icon: FolderKanban, clinical: true },
+  { href: "/panel/jefatura", label: "Jefatura", icon: Shield, chiefOnly: true },
   { href: "/panel/ajustes", label: "Ajustes", icon: Settings },
 ];
 
@@ -24,6 +27,15 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { user } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+
+  const nav = useMemo(() => {
+    const role = user?.role || (user?.technical ? "technical" : "nutritionist");
+    return BASE_NAV.filter((item) => {
+      if ("chiefOnly" in item && item.chiefOnly) return role === "chief";
+      if ("clinical" in item && item.clinical) return role === "chief" || role === "nutritionist";
+      return true;
+    });
+  }, [user]);
 
   useEffect(() => setMenuOpen(false), [pathname]);
 
@@ -47,8 +59,11 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="flex h-full flex-col">
       <div className="px-5 pb-4 pt-6">
         <Link href="/panel" className="flex items-center gap-2.5">
-          <Logo className="h-8 w-8" />
-          <span className="font-display text-lg font-semibold tracking-tight text-white">NutriIPS</span>
+          <Logo className="h-9 w-9" />
+          <span className="min-w-0">
+            <span className="block font-display text-lg font-semibold tracking-tight text-white">NutriIPS</span>
+            <span className="block text-[10px] font-medium uppercase tracking-[0.14em] text-leaf-300">IPS Misiones · Nutrición</span>
+          </span>
         </Link>
       </div>
       <div className="px-3">
@@ -62,7 +77,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </button>
       </div>
       <nav className="mt-4 flex-1 space-y-0.5 px-3">
-        {NAV.map((item) => {
+        {nav.map((item) => {
           const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
           return (
             <Link
@@ -79,12 +94,15 @@ export function AppShell({ children }: { children: ReactNode }) {
           );
         })}
       </nav>
+      {!user?.technical && <NotificationBell />}
       <div className="border-t border-white/10 p-3">
         <div className="flex items-center gap-3 rounded-xl px-2 py-2">
-          <Avatar name={user?.name ?? "?"} size="sm" />
+          <Avatar name={user?.name ?? "?"} src={user?.avatarUrl} size="sm" />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium text-white">{user?.name ?? "—"}</p>
-            <p className="truncate text-xs text-white/50">{user?.license ? `M.P. ${user.license}` : user?.email}</p>
+            <p className="truncate text-xs text-white/50">
+              {user?.role === "chief" ? "Jefa de departamento" : user?.license ? `M.P. ${user.license}` : user?.email}
+            </p>
           </div>
           <button onClick={logout} className="rounded-lg p-2 text-white/60 hover:bg-white/10 hover:text-white" title="Cerrar sesión" aria-label="Cerrar sesión">
             <LogOut className="h-4 w-4" />
@@ -106,9 +124,12 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Logo className="h-7 w-7" />
           <span className="font-display font-semibold">NutriIPS</span>
         </Link>
-        <button onClick={() => setSearchOpen(true)} className="rounded-lg p-2 hover:bg-ink-900/5" aria-label="Buscar paciente">
-          <Search className="h-5 w-5" />
-        </button>
+        <div className="flex items-center gap-1">
+          {!user?.technical && <NotificationBell compact />}
+          <button onClick={() => setSearchOpen(true)} className="rounded-lg p-2 hover:bg-ink-900/5" aria-label="Buscar paciente">
+            <Search className="h-5 w-5" />
+          </button>
+        </div>
       </header>
 
       {menuOpen && (

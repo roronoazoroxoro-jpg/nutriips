@@ -84,7 +84,7 @@ export function SendPlanEmailModal({
       <div className="space-y-4">
         {configured === false && (
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            Falta configurar el correo del departamento (`SMTP_USER` y `SMTP_PASS` con una contraseña de aplicación de Gmail).
+            Falta configurar el correo del departamento (`SMTP_USER` y `SMTP_PASS` con la clave SMTP de Brevo).
             Hasta que esté cargado, no se puede enviar desde la app.
           </div>
         )}

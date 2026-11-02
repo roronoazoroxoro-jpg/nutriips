@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSessionNutritionist, ownedPatient, unauthorized } from "@/lib/auth";
+import { canAccessPatient, getSessionNutritionist, unauthorized } from "@/lib/auth";
 import { badRequest, handleError, notFound, readJson } from "@/lib/api";
 import { prisma } from "@/lib/db";
 import { BREADTHS, GIRTHS, SKINFOLDS } from "@/lib/isak";
@@ -91,7 +91,7 @@ export async function POST(request: Request, context: Ctx) {
   const user = await getSessionNutritionist();
   if (!user) return unauthorized();
   const { id } = await context.params;
-  if (!(await ownedPatient(user, id))) return notFound("Paciente no encontrado");
+  if (!(await canAccessPatient(user, id))) return notFound("Paciente no encontrado");
 
   try {
     const body = await readJson<{ kind?: string; payload?: Payload; measuredAt?: string }>(request);
@@ -193,7 +193,7 @@ export async function DELETE(request: Request, context: Ctx) {
   const user = await getSessionNutritionist();
   if (!user) return unauthorized();
   const { id } = await context.params;
-  if (!(await ownedPatient(user, id))) return notFound("Paciente no encontrado");
+  if (!(await canAccessPatient(user, id))) return notFound("Paciente no encontrado");
   const url = new URL(request.url);
   const kind = url.searchParams.get("kind") ?? "";
   const recordId = url.searchParams.get("recordId") ?? "";

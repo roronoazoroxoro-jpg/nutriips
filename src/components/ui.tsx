@@ -379,7 +379,17 @@ export function Tabs<T extends string>({
   );
 }
 
-export function Avatar({ name, size = "md" }: { name: string; size?: "sm" | "md" | "lg" }) {
+export function Avatar({
+  name,
+  src,
+  size = "md",
+  className,
+}: {
+  name: string;
+  src?: string | null;
+  size?: "sm" | "md" | "lg" | "xl";
+  className?: string;
+}) {
   const letters = name
     .split(/\s+/)
     .filter(Boolean)
@@ -388,6 +398,16 @@ export function Avatar({ name, size = "md" }: { name: string; size?: "sm" | "md"
     .join("");
   const palette = ["bg-leaf-100 text-leaf-800", "bg-sky-100 text-sky-800", "bg-amber-100 text-amber-800", "bg-rose-100 text-rose-800", "bg-violet-100 text-violet-800"];
   const color = palette[[...name].reduce((acc, char) => acc + char.charCodeAt(0), 0) % palette.length];
-  const dims = { sm: "h-8 w-8 text-xs", md: "h-10 w-10 text-sm", lg: "h-14 w-14 text-lg" }[size];
-  return <div className={cx("grid shrink-0 place-items-center rounded-full font-semibold", color, dims)}>{letters || "?"}</div>;
+  const dims = { sm: "h-8 w-8 text-xs", md: "h-10 w-10 text-sm", lg: "h-14 w-14 text-lg", xl: "h-20 w-20 text-xl" }[size];
+  if (src) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={src}
+        alt={name}
+        className={cx("shrink-0 rounded-full object-cover ring-1 ring-ink-900/10", dims, className)}
+      />
+    );
+  }
+  return <div className={cx("grid shrink-0 place-items-center rounded-full font-semibold", color, dims, className)}>{letters || "?"}</div>;
 }

@@ -1,23 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { KeyRound, UserRound } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Camera, KeyRound, Trash2, UserRound } from "lucide-react";
 import { api } from "@/lib/client";
+import { prepareAvatarFile } from "@/lib/avatar-client";
 import { useSession, type User } from "@/components/session";
 import { useToast } from "@/components/toast";
 import { LocalBackupCard } from "@/components/LocalBackup";
-import { Button, Card, CardHeader, Input, PageHeader, Spinner } from "@/components/ui";
+import { Avatar, Button, Card, CardHeader, Input, PageHeader, Spinner } from "@/components/ui";
 
 export default function SettingsPage() {
   const { user } = useSession();
   return (
     <div className="animate-fade-in space-y-6">
-      <PageHeader eyebrow="Consultorio" title="Ajustes" description="Tus datos profesionales aparecen en el membrete de informes y planes." />
+      <PageHeader eyebrow="Consultorio" title="Ajustes" description="Tu foto aparece en el inicio al elegir perfil. Los datos salen en el membrete de informes y planes." />
       {!user ? (
         <Spinner />
       ) : (
         <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
-          <ProfileCard user={user} />
+          <div className="space-y-6">
+            <AvatarCard user={user} />
+            <ProfileCard user={user} />
+          </div>
           <div className="space-y-6">
             <PasswordCard />
             <LocalBackupCard />
@@ -25,6 +29,87 @@ export default function SettingsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+function AvatarCard({ user }: { user: User }) {
+  const { setUser } = useSession();
+  const toast = useToast();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [loading, setLoading] = useState(false);
+  const [preview, setPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPreview(null);
+  }, [user.avatarUrl]);
+
+  async function onPick(file: File | null) {
+    if (!file) return;
+    setLoading(true);
+    try {
+      const prepared = await prepareAvatarFile(file);
+      const localUrl = URL.createObjectURL(prepared);
+      setPreview(localUrl);
+      const body = new FormData();
+      body.append("avatar", prepared);
+      const response = await fetch("/api/profile/avatar", { method: "POST", body });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "No se pudo subir la foto");
+      setUser(data.user);
+      toast.success("Foto de perfil actualizada · ya se ve en el inicio");
+      URL.revokeObjectURL(localUrl);
+      setPreview(null);
+    } catch (err) {
+      setPreview(null);
+      toast.error((err as Error).message);
+    } finally {
+      setLoading(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  }
+
+  async function remove() {
+    setLoading(true);
+    try {
+      const data = await api<{ user: User }>("/api/profile/avatar", { method: "DELETE" });
+      setUser(data.user);
+      toast.success("Foto eliminada");
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader icon={<Camera className="h-4 w-4" />} title="Foto de perfil" subtitle="Se muestra en el listado de ingreso y en tu menú" />
+      <div className="flex flex-col items-start gap-5 p-5 sm:flex-row sm:items-center">
+        <Avatar name={user.name} src={preview || user.avatarUrl} size="xl" className="ring-2 ring-leaf-200" />
+        <div className="min-w-0 flex-1 space-y-3">
+          <p className="text-sm leading-relaxed text-ink-600">
+            Subí una foto clara, de frente. La recortamos en cuadrado automáticamente para que se vea bien en el inicio.
+          </p>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={(event) => onPick(event.target.files?.[0] || null)}
+          />
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" loading={loading} icon={<Camera className="h-4 w-4" />} onClick={() => inputRef.current?.click()}>
+              {user.avatarUrl ? "Cambiar foto" : "Subir foto"}
+            </Button>
+            {user.avatarUrl && (
+              <Button type="button" variant="secondary" loading={loading} icon={<Trash2 className="h-4 w-4" />} onClick={remove}>
+                Quitar
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+    </Card>
   );
 }
 

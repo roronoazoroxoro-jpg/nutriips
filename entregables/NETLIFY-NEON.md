@@ -45,22 +45,25 @@ npm run db:staff
 | `AUTH_SECRET` | cadena larga aleatoria |
 | `COOKIE_SECURE` | `true` |
 | `CLINIC_NAME` | `Departamento de Nutrición · IPS` |
-| `SMTP_HOST` | `smtp.gmail.com` |
-| `SMTP_PORT` | `465` |
-| `SMTP_SECURE` | `true` |
-| `SMTP_USER` | Gmail del departamento |
-| `SMTP_PASS` | Contraseña de aplicación de Gmail |
+| `SMTP_HOST` | `smtp-relay.brevo.com` |
+| `SMTP_PORT` | `587` |
+| `SMTP_SECURE` | `false` |
+| `SMTP_USER` | login SMTP de Brevo (`…@smtp-brevo.com`) |
+| `SMTP_PASS` | SMTP key de Brevo |
+| `MAIL_FROM` | `Departamento de Nutrición · IPS <ipsnutricionnutricion@gmail.com>` |
 | `MAIL_FROM_NAME` | `Departamento de Nutrición · IPS` |
 
 5. Deploy.
 
-## 3b. Correo a pacientes (Gmail)
+## 3b. Correo a pacientes (Brevo → From Gmail)
 
-1. En la cuenta Gmail del departamento activá **verificación en 2 pasos**.
-2. Creá una **contraseña de aplicaciones**: https://myaccount.google.com/apppasswords  
-   Nombre: `NutriIPS`.
-3. Pegá esa clave en `SMTP_PASS` (local `.env` y Netlify).
-4. En la ficha del paciente → **Plan alimentario** → **Enviar por Gmail**.
+Gmail no deja crear contraseñas de aplicación sin teléfono/2FA. Usamos **Brevo** como SMTP; el remitente visible sigue siendo el Gmail del departamento.
+
+1. Cuenta Brevo con `ipsnutricionnutricion@gmail.com` (ya creada).
+2. Verificá el celular en Brevo (obligatorio para generar claves).
+3. En https://app.brevo.com/settings/keys/smtp generá una **SMTP key**.
+4. Pegá esa clave en `SMTP_PASS` (local `.env` y Netlify). Login SMTP: el que muestra Brevo.
+5. En la ficha del paciente → **Plan alimentario** → **Enviar por Gmail**.
 
 ## 4. Datos en la PC de cada nutricionista
 

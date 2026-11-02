@@ -4,6 +4,7 @@ import { handleError, notFound, readJson } from "@/lib/api";
 import { APPOINTMENT_STATUS } from "@/lib/appointments";
 import { appointmentSelect, assertNoOverlap, parseStart } from "@/lib/appointments-server";
 import { prisma } from "@/lib/db";
+import { isChief } from "@/lib/roles";
 import { ValidationError, optionalNumber, text } from "@/lib/validation";
 
 export const runtime = "nodejs";
@@ -14,7 +15,9 @@ export async function PATCH(request: Request, context: Ctx) {
   const user = await getSessionNutritionist();
   if (!user) return unauthorized();
   const { id } = await context.params;
-  const current = await prisma.appointment.findFirst({ where: { id, nutritionistId: user.id } });
+  const current = await prisma.appointment.findFirst({
+    where: isChief(user) ? { id } : { id, nutritionistId: user.id },
+  });
   if (!current) return notFound("Turno no encontrado");
   try {
     const body = await readJson(request);
@@ -29,7 +32,7 @@ export async function PATCH(request: Request, context: Ctx) {
     }
     if (body.reason !== undefined) data.reason = text(body.reason, 300);
     if (data.startsAt || data.durationMin) {
-      await assertNoOverlap(user.id, data.startsAt ?? current.startsAt, data.durationMin ?? current.durationMin, id);
+      await assertNoOverlap(current.nutritionistId, data.startsAt ?? current.startsAt, data.durationMin ?? current.durationMin, id);
     }
     const appointment = await prisma.appointment.update({ where: { id }, data, select: appointmentSelect });
     return NextResponse.json({ appointment });
@@ -42,7 +45,9 @@ export async function DELETE(_request: Request, context: Ctx) {
   const user = await getSessionNutritionist();
   if (!user) return unauthorized();
   const { id } = await context.params;
-  const result = await prisma.appointment.deleteMany({ where: { id, nutritionistId: user.id } });
+  const result = await prisma.appointment.deleteMany({
+    where: isChief(user) ? { id } : { id, nutritionistId: user.id },
+  });
   if (!result.count) return notFound("Turno no encontrado");
   return NextResponse.json({ ok: true });
 }

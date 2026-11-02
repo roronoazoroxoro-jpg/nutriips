@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSessionNutritionist, unauthorized } from "@/lib/auth";
+import { canAccessPatient, getSessionNutritionist, unauthorized } from "@/lib/auth";
 import { handleError, notFound, readJson } from "@/lib/api";
 import { ValidationError } from "@/lib/validation";
 import { prisma } from "@/lib/db";
@@ -29,7 +29,8 @@ export async function GET(_request: Request, context: Ctx) {
   const user = await getSessionNutritionist();
   if (!user) return unauthorized();
   const { id } = await context.params;
-  const patient = await prisma.patient.findFirst({ where: { id, nutritionistId: user.id }, select: { id: true, email: true, fullName: true } });
+  if (!(await canAccessPatient(user, id))) return notFound("Paciente no encontrado");
+  const patient = await prisma.patient.findFirst({ where: { id }, select: { id: true, email: true, fullName: true } });
   if (!patient) return notFound("Paciente no encontrado");
   return NextResponse.json({
     configured: mailConfigured(),
@@ -46,11 +47,12 @@ export async function POST(request: Request, context: Ctx) {
   try {
     if (!mailConfigured()) {
       throw new ValidationError(
-        "El envío por Gmail todavía no está configurado. Pedile a administración que cargue SMTP_USER y SMTP_PASS (contraseña de aplicación de Gmail)."
+        "El envío por correo todavía no está configurado. Pedile a administración que cargue SMTP_USER y SMTP_PASS (clave SMTP de Brevo)."
       );
     }
 
-    const patient = await prisma.patient.findFirst({ where: { id, nutritionistId: user.id }, include: patientInclude });
+    if (!(await canAccessPatient(user, id))) return notFound("Paciente no encontrado");
+    const patient = await prisma.patient.findFirst({ where: { id }, include: patientInclude });
     if (!patient) return notFound("Paciente no encontrado");
 
     const body = await readJson(request);

@@ -1,6 +1,6 @@
 import { spawnSync } from "child_process";
 import { randomBytes } from "crypto";
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import bcrypt from "bcryptjs";
@@ -16,10 +16,11 @@ if (existsSync(envFile)) {
   }
 }
 
-const BASE = process.env.VIDEO_URL || "http://localhost:3010";
+const BASE = process.env.VIDEO_URL || "https://nutriips-ips.netlify.app";
 const OUT_DIR = join(root, "video");
 const FRAMES = join(OUT_DIR, "frames");
 const OUTPUT = join(OUT_DIR, "NutriIPS-recorrido.mp4");
+const DESKTOP_DIR = join(process.env.USERPROFILE || root, "Desktop", "NutriIPS - Manual y Tutorial");
 const WIDTH = 1440;
 const HEIGHT = 900;
 const EMAIL = "recorrido.video@nutriips.local";
@@ -69,8 +70,10 @@ async function seed() {
       passwordHash: await bcrypt.hash(PASSWORD, 10),
       license: "4521",
       phone: "11 4321-8765",
-      clinicName: "Consultorio Nutrir",
-      address: "Av. Rivadavia 4250, CABA",
+      clinicName: "Departamento de Nutrición · IPS Misiones",
+      address: "Posadas, Misiones",
+      title: "Lic. en Nutrición",
+      mustChangePassword: false,
     },
   });
 
@@ -401,12 +404,17 @@ async function main() {
   await sleep(3800);
 
   await go("/");
-  await say("Acceso seguro", "Cada profesional entra con su usuario y solo ve sus propios pacientes.");
-  await type(page.getByLabel("Email"), EMAIL, 28);
-  await type(page.getByLabel("Clave"), PASSWORD, 40);
-  await click(page.getByRole("button", { name: "Ingresar" }), 300);
+  await say("Acceso interno", "Elegí tu nombre en el listado. Cada profesional solo ve sus propios pacientes.");
+  await type(page.getByLabel("Buscar profesional"), "Ana Pérez", 45);
+  await sleep(700);
+  await click(page.getByRole("button", { name: /Lic\. Ana Pérez/ }), 900);
+  await say("Tu clave", "Después de elegir el perfil, solo queda escribir tu clave e ingresar.", 400);
+  await type(page.getByLabel("Tu clave"), PASSWORD, 40);
+  await click(page.getByRole("button", { name: "Ingresar al panel" }), 300);
   await page.waitForURL("**/panel", { timeout: 20000 });
   await page.waitForLoadState("networkidle");
+  const dismissInstall = page.getByRole("button", { name: /Ahora no/i });
+  if (await dismissInstall.count()) await dismissInstall.first().click().catch(() => {});
   await restoreCaption();
 
   await say("Inicio", "El tablero del día: turnos de hoy, próximos turnos y un resumen del consultorio.", 2600);
@@ -419,10 +427,13 @@ async function main() {
   await say("Buscador", "Con Ctrl + K se busca cualquier paciente por nombre, DNI o teléfono, desde cualquier pantalla.");
   await page.keyboard.press("Control+k");
   await sleep(700);
-  await page.getByPlaceholder("Nombre, DNI o teléfono...").pressSequentially("maría", { delay: 120 });
+  await page.waitForFunction(() => !document.body.innerText.includes("Cargando pacientes"), null, { timeout: 15000 }).catch(() => {});
+  await page.getByPlaceholder("Nombre, DNI o teléfono...").pressSequentially("María González", { delay: 90 });
   await sleep(1100);
-  await page.keyboard.press("Enter");
-  await page.waitForURL(`**/panel/pacientes/${maria.id}`, { timeout: 15000 });
+  const searchHit = page.getByRole("button", { name: /María González/ });
+  if (await searchHit.count()) await click(searchHit.first(), 500);
+  else await go(`/panel/pacientes/${maria.id}`);
+  await page.waitForURL(`**/panel/pacientes/${maria.id}`, { timeout: 20000 });
   await page.waitForLoadState("networkidle");
   await restoreCaption();
   await sleep(600);
@@ -559,8 +570,16 @@ async function main() {
     { stdio: "inherit" }
   );
   if (encode.status !== 0) throw new Error("ffmpeg no pudo generar el video");
-  rmSync(FRAMES, { recursive: true, force: true });
+  try {
+    rmSync(FRAMES, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+  } catch {
+    console.warn("No se pudieron borrar los frames temporales; el video igual quedó generado.");
+  }
+  mkdirSync(DESKTOP_DIR, { recursive: true });
+  const deskVideo = join(DESKTOP_DIR, "NutriIPS-tutorial-sistema.mp4");
+  copyFileSync(OUTPUT, deskVideo);
   console.log("Video listo:", OUTPUT);
+  console.log("Copia Escritorio:", deskVideo);
 }
 
 try {
@@ -569,6 +588,10 @@ try {
   console.error(error);
   process.exitCode = 1;
 } finally {
-  await cleanup();
-  await prisma.$disconnect();
+  try {
+    await cleanup();
+  } catch (error) {
+    console.warn("Limpieza demo:", error instanceof Error ? error.message : error);
+  }
+  await prisma.$disconnect().catch(() => {});
 }

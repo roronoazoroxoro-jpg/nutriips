@@ -8,8 +8,11 @@ prisma/dev.db-journal
 respaldos
 video
 entregables/credenciales*.csv
+entregables/credenciales*.pdf
+entregables/credenciales*.html
 entregables/full-export.json
 *.csv
+NutriIPS-credenciales*
 .vercel
 .netlify
 playwright-report

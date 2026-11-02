@@ -11,11 +11,13 @@
     "db:push": "prisma db push",
     "db:seed": "node prisma/seed.mjs",
     "db:staff": "node prisma/seed.mjs --reset-passwords",
+    "credenciales:pdf": "node scripts/credenciales-pdf.mjs",
     "db:export": "node scripts/export-all.mjs",
     "db:import": "node scripts/import-export.mjs",
     "backup": "node scripts/backup.mjs",
     "demo": "node scripts/demo.mjs",
     "video": "node scripts/video.mjs",
+    "manual": "node scripts/manual-staff.mjs",
     "icons": "node scripts/make-icons.mjs",
     "cie10:import": "node scripts/import-cie10.mjs",
     "postinstall": "prisma generate"

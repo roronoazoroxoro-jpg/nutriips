@@ -1,7 +1,9 @@
 import { createHmac, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { avatarPublicUrl } from "./avatar";
 import { prisma } from "./db";
+import { isChief, staffRole } from "./roles";
 
 export const SESSION_COOKIE = "nutriips_session";
 const SESSION_DAYS = 14;
@@ -73,7 +75,11 @@ export function publicUser(user: SessionUser) {
     phone: user.phone,
     clinicName: user.clinicName,
     address: user.address,
+    title: user.title,
+    role: staffRole(user),
+    technical: user.technical || staffRole(user) === "technical",
     mustChangePassword: user.mustChangePassword,
+    avatarUrl: avatarPublicUrl(user),
   };
 }
 
@@ -83,4 +89,16 @@ export function unauthorized() {
 
 export async function ownedPatient(user: SessionUser, patientId: string) {
   return prisma.patient.findFirst({ where: { id: patientId, nutritionistId: user.id }, select: { id: true } });
+}
+
+/** Acceso a ficha: titular o jefa del departamento. */
+export async function canAccessPatient(user: SessionUser, patientId: string) {
+  if (isChief(user)) {
+    return prisma.patient.findFirst({ where: { id: patientId }, select: { id: true, nutritionistId: true } });
+  }
+  return prisma.patient.findFirst({ where: { id: patientId, nutritionistId: user.id }, select: { id: true, nutritionistId: true } });
+}
+
+export function patientScope(user: SessionUser) {
+  return isChief(user) ? {} : { nutritionistId: user.id };
 }

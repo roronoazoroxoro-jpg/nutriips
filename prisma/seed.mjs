@@ -20,12 +20,22 @@ const prisma = new PrismaClient();
 const CLINIC = process.env.CLINIC_NAME || "Departamento de Nutrición · IPS";
 const RESET = process.argv.includes("--reset-passwords");
 
-function makePassword() {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
-  let out = "Nutri-";
-  const bytes = randomBytes(8);
-  for (let i = 0; i < 8; i++) out += alphabet[bytes[i] % alphabet.length];
-  return out + "!";
+/** Clave fácil de recordar: Nombre + 4 números (ej. Valentina4821). */
+function easyFirstName(fullName) {
+  const particles = new Set(["de", "del", "da", "das", "do", "dos", "la", "las", "los", "y", "e"]);
+  const parts = String(fullName || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .split(/\s+/)
+    .filter(Boolean);
+  const pick = parts.find((part) => part.length >= 4 && !particles.has(part.toLowerCase())) || parts[0] || "Nutri";
+  return pick.charAt(0).toUpperCase() + pick.slice(1).toLowerCase().replace(/[^a-zA-Z]/g, "");
+}
+
+function makePassword(fullName) {
+  const name = easyFirstName(fullName);
+  const digits = String(1000 + (randomBytes(2).readUInt16BE(0) % 9000));
+  return `${name}${digits}`;
 }
 
 const staffPath = join(root, "prisma", "staff.json");
@@ -42,40 +52,55 @@ for (const person of staff) {
     .toLowerCase();
   const name = String(person.name || "").trim();
   const phone = String(person.phone || "").replace(/[^\d]/g, "") || null;
+  const title = String(person.title || "").trim() || null;
+  const area = String(person.area || "").trim() || null;
+  const manager = String(person.manager || "").trim() || null;
+  const license = String(person.license || "").trim() || null;
+  const technical = Boolean(person.technical) || person.role === "technical";
+  const role = String(person.role || (technical ? "technical" : "nutritionist")).trim() || "nutritionist";
   if (!email || !name) {
     console.warn("Omitido (falta email o nombre):", person);
     continue;
   }
 
+  const profile = {
+    name,
+    phone,
+    title,
+    area,
+    manager,
+    license,
+    technical,
+    role,
+  };
+
   const existing = await prisma.nutritionist.findUnique({ where: { email } });
   if (!existing) {
-    const password = makePassword();
+    const password = makePassword(name);
     await prisma.nutritionist.create({
       data: {
         email,
-        name,
-        phone,
+        ...profile,
         clinicName: CLINIC,
         passwordHash: await bcrypt.hash(password, 12),
-        mustChangePassword: true,
+        mustChangePassword: false,
       },
     });
-    rows.push({ nombre: name, email, telefono: phone || "", clave: password, estado: "creado" });
+    rows.push({ nombre: name, email, telefono: phone || "", clave: password, cargo: title || "", estado: "creado" });
     created++;
     console.log("Creado:", email);
   } else if (RESET) {
-    const password = makePassword();
+    const password = makePassword(name);
     await prisma.nutritionist.update({
       where: { id: existing.id },
       data: {
-        name,
-        phone,
+        ...profile,
         clinicName: existing.clinicName || CLINIC,
         passwordHash: await bcrypt.hash(password, 12),
-        mustChangePassword: true,
+        mustChangePassword: false,
       },
     });
-    rows.push({ nombre: name, email, telefono: phone || "", clave: password, estado: "clave_reiniciada" });
+    rows.push({ nombre: name, email, telefono: phone || "", clave: password, cargo: title || "", estado: "clave_reiniciada" });
     updated++;
     console.log("Clave reiniciada:", email);
   } else {
@@ -84,10 +109,16 @@ for (const person of staff) {
       data: {
         name,
         phone: phone || existing.phone,
+        title,
+        area,
+        manager,
+        license: license || existing.license,
+        technical,
+        role,
         clinicName: existing.clinicName || CLINIC,
       },
     });
-    rows.push({ nombre: name, email, telefono: phone || existing.phone || "", clave: "(sin cambios)", estado: "ya_existia" });
+    rows.push({ nombre: name, email, telefono: phone || existing.phone || "", clave: "(sin cambios)", cargo: title || "", estado: "ya_existia" });
     unchanged++;
     console.log("Actualizado perfil (clave intacta):", email);
   }
@@ -124,9 +155,9 @@ const outDir = join(root, "entregables");
 mkdirSync(outDir, { recursive: true });
 const stamp = new Date().toISOString().slice(0, 10);
 const csvPath = join(outDir, `credenciales-nutricionistas-${stamp}.csv`);
-const header = "nombre;email;telefono;clave;estado";
+const header = "nombre;email;telefono;clave;cargo;estado";
 const body = rows
-  .map((r) => [r.nombre, r.email, r.telefono, r.clave, r.estado].map((c) => `"${String(c).replace(/"/g, '""')}"`).join(";"))
+  .map((r) => [r.nombre, r.email, r.telefono, r.clave, r.cargo || "", r.estado].map((c) => `"${String(c).replace(/"/g, '""')}"`).join(";"))
   .join("\n");
 writeFileSync(csvPath, "\uFEFF" + header + "\n" + body, "utf8");
 
