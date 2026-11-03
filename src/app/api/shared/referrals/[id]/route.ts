@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
-import { getSessionNutritionist, unauthorized } from "@/lib/auth";
 import { handleError, notFound, readJson } from "@/lib/api";
 import { logActivity, notifyNutritionist } from "@/lib/activity";
 import { assertNoOverlap, parseStart } from "@/lib/appointments-server";
 import { prisma } from "@/lib/db";
-import { forbidden, isClinical } from "@/lib/roles";
+import { requireClinicalActor } from "@/lib/shared-access";
 import { ValidationError, optionalNumber, text } from "@/lib/validation";
 
 export const runtime = "nodejs";
@@ -20,16 +19,14 @@ const REFERRAL_INCLUDE = {
 } as const;
 
 export async function PATCH(request: Request, context: Ctx) {
-  const user = await getSessionNutritionist();
-  if (!user) return unauthorized();
-  if (!isClinical(user)) return forbidden();
   const { id } = await context.params;
-
   const current = await prisma.referral.findUnique({ where: { id } });
   if (!current) return notFound("Derivación no encontrada");
 
   try {
     const body = await readJson(request);
+    const actor = await requireClinicalActor(body.actorId ? String(body.actorId) : null);
+
     const data: {
       fullName?: string;
       dni?: string | null;
@@ -82,12 +79,24 @@ export async function PATCH(request: Request, context: Ctx) {
 
     if (nextAssignee) {
       const assignee = await prisma.nutritionist.findFirst({
-        where: { id: nextAssignee, NOT: { role: "technical" } },
+        where: { id: nextAssignee, NOT: { role: "technical" }, technical: false },
         select: { id: true, name: true },
       });
       if (!assignee) throw new ValidationError("Elegí una nutricionista válida");
 
       let patientId = current.patientId;
+      if (!patientId) {
+        const dni = data.dni ?? current.dni;
+        if (dni) {
+          const existing = await prisma.patient.findFirst({
+            where: { dni },
+            select: { id: true },
+            orderBy: { createdAt: "desc" },
+          });
+          if (existing) patientId = existing.id;
+        }
+      }
+
       if (!patientId) {
         const patient = await prisma.patient.create({
           data: {
@@ -102,7 +111,7 @@ export async function PATCH(request: Request, context: Ctx) {
         });
         patientId = patient.id;
         data.patientId = patientId;
-      } else if (assignTo || data.fullName || data.phone || data.dni) {
+      } else {
         await prisma.patient.update({
           where: { id: patientId },
           data: {
@@ -111,8 +120,10 @@ export async function PATCH(request: Request, context: Ctx) {
             dni: data.dni ?? undefined,
             phone: data.phone ?? undefined,
             birthDate: data.birthDate ?? undefined,
+            diagnosis: nextReason || undefined,
           },
         });
+        data.patientId = patientId;
       }
 
       if (nextSchedule) {
@@ -126,7 +137,14 @@ export async function PATCH(request: Request, context: Ctx) {
               startsAt: nextSchedule,
               durationMin: nextDuration,
               reason: nextReason,
-              status: data.status === "presente" ? "atendido" : data.status === "ausente" ? "ausente" : data.status === "cancelado" ? "cancelado" : "programado",
+              status:
+                data.status === "presente"
+                  ? "atendido"
+                  : data.status === "ausente"
+                    ? "ausente"
+                    : data.status === "cancelado"
+                      ? "cancelado"
+                      : "programado",
             },
           });
         } else {
@@ -144,13 +162,15 @@ export async function PATCH(request: Request, context: Ctx) {
         }
       }
 
-      if (assignTo && assignTo !== current.assignedToId) {
+      const reassigned = Boolean(assignTo && assignTo !== current.assignedToId);
+      const newlyLinked = Boolean(!current.patientId && patientId);
+      if ((reassigned || newlyLinked) && assignTo) {
         await notifyNutritionist({
           nutritionistId: assignTo,
           type: "referral.assigned",
-          title: "Te asignaron una derivación",
-          body: `${nextName}${nextSchedule ? ` · ${nextSchedule.toLocaleString("es-AR")}` : ""}${nextReason ? ` · ${nextReason}` : ""}`,
-          href: patientId ? `/panel/pacientes/${patientId}` : "/panel/compartido",
+          title: "Te asignaron un paciente",
+          body: `${nextName}${nextSchedule ? ` · ${nextSchedule.toLocaleString("es-AR")}` : ""}${nextReason ? ` · ${nextReason}` : ""} · por ${actor.name}`,
+          href: `/panel/pacientes/${patientId}`,
         });
       }
     }
@@ -162,7 +182,7 @@ export async function PATCH(request: Request, context: Ctx) {
     });
 
     await logActivity({
-      actorId: user.id,
+      actorId: actor.id,
       action: "referral.update",
       entity: "referral",
       entityId: id,

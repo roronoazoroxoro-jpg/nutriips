@@ -91,14 +91,34 @@ export async function ownedPatient(user: SessionUser, patientId: string) {
   return prisma.patient.findFirst({ where: { id: patientId, nutritionistId: user.id }, select: { id: true } });
 }
 
-/** Acceso a ficha: titular o jefa del departamento. */
+/** Acceso a ficha: titular, jefa, o quien asignó/recibió la derivación compartida. */
 export async function canAccessPatient(user: SessionUser, patientId: string) {
   if (isChief(user)) {
     return prisma.patient.findFirst({ where: { id: patientId }, select: { id: true, nutritionistId: true } });
   }
-  return prisma.patient.findFirst({ where: { id: patientId, nutritionistId: user.id }, select: { id: true, nutritionistId: true } });
+  const owned = await prisma.patient.findFirst({
+    where: { id: patientId, nutritionistId: user.id },
+    select: { id: true, nutritionistId: true },
+  });
+  if (owned) return owned;
+
+  const viaReferral = await prisma.referral.findFirst({
+    where: {
+      patientId,
+      OR: [{ assignedToId: user.id }, { assignedById: user.id }],
+    },
+    select: { patientId: true },
+  });
+  if (!viaReferral) return null;
+  return prisma.patient.findFirst({ where: { id: patientId }, select: { id: true, nutritionistId: true } });
 }
 
 export function patientScope(user: SessionUser) {
-  return isChief(user) ? {} : { nutritionistId: user.id };
+  if (isChief(user)) return {};
+  return {
+    OR: [
+      { nutritionistId: user.id },
+      { referrals: { some: { OR: [{ assignedToId: user.id }, { assignedById: user.id }] } } },
+    ],
+  };
 }

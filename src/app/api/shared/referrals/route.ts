@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
-import { getSessionNutritionist, unauthorized } from "@/lib/auth";
 import { handleError, readJson } from "@/lib/api";
 import { logActivity, notifyNutritionist } from "@/lib/activity";
 import { assertNoOverlap, parseStart } from "@/lib/appointments-server";
 import { prisma } from "@/lib/db";
-import { forbidden, isClinical } from "@/lib/roles";
+import { requireClinicalActor } from "@/lib/shared-access";
 import { ValidationError, optionalNumber, text } from "@/lib/validation";
 
 export const runtime = "nodejs";
@@ -16,10 +15,6 @@ const REFERRAL_INCLUDE = {
 } as const;
 
 export async function GET(request: Request) {
-  const user = await getSessionNutritionist();
-  if (!user) return unauthorized();
-  if (!isClinical(user)) return forbidden();
-
   const url = new URL(request.url);
   const status = url.searchParams.get("status");
   const referrals = await prisma.referral.findMany({
@@ -32,12 +27,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const user = await getSessionNutritionist();
-  if (!user) return unauthorized();
-  if (!isClinical(user)) return forbidden();
-
   try {
     const body = await readJson(request);
+    const actor = await requireClinicalActor(body.actorId ? String(body.actorId) : null);
     const fullName = text(body.fullName, 160);
     if (!fullName) throw new ValidationError("El nombre del paciente es obligatorio");
 
@@ -52,10 +44,22 @@ export async function POST(request: Request) {
 
     if (assignedToId) {
       const assignee = await prisma.nutritionist.findFirst({
-        where: { id: assignedToId, NOT: { role: "technical" } },
+        where: { id: assignedToId, NOT: { role: "technical" }, technical: false },
         select: { id: true, name: true },
       });
       if (!assignee) throw new ValidationError("Elegí una nutricionista válida");
+
+      if (!patientId) {
+        const dni = text(body.dni, 30);
+        if (dni) {
+          const existing = await prisma.patient.findFirst({
+            where: { dni },
+            select: { id: true },
+            orderBy: { createdAt: "desc" },
+          });
+          if (existing) patientId = existing.id;
+        }
+      }
 
       if (!patientId) {
         const patient = await prisma.patient.create({
@@ -73,7 +77,14 @@ export async function POST(request: Request) {
       } else {
         await prisma.patient.update({
           where: { id: patientId },
-          data: { nutritionistId: assignedToId },
+          data: {
+            nutritionistId: assignedToId,
+            fullName,
+            dni: text(body.dni, 30) || undefined,
+            birthDate: text(body.birthDate, 20) || undefined,
+            phone: text(body.phone, 40) || undefined,
+            diagnosis: reason || undefined,
+          },
         });
       }
 
@@ -95,9 +106,9 @@ export async function POST(request: Request) {
       await notifyNutritionist({
         nutritionistId: assignedToId,
         type: "referral.assigned",
-        title: "Nueva derivación asignada",
-        body: `${fullName}${scheduledAt ? ` · ${scheduledAt.toLocaleString("es-AR")}` : ""}${reason ? ` · ${reason}` : ""}`,
-        href: patientId ? `/panel/pacientes/${patientId}` : "/panel/compartido",
+        title: "Te asignaron un paciente",
+        body: `${fullName}${scheduledAt ? ` · ${scheduledAt.toLocaleString("es-AR")}` : ""}${reason ? ` · ${reason}` : ""} · por ${actor.name}`,
+        href: `/panel/pacientes/${patientId}`,
       });
     }
 
@@ -115,7 +126,7 @@ export async function POST(request: Request) {
         scheduledAt,
         durationMin,
         assignedToId,
-        assignedById: user.id,
+        assignedById: actor.id,
         patientId,
         appointmentId,
       },
@@ -123,7 +134,7 @@ export async function POST(request: Request) {
     });
 
     await logActivity({
-      actorId: user.id,
+      actorId: actor.id,
       action: "referral.create",
       entity: "referral",
       entityId: referral.id,

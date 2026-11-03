@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Building2, FolderKanban, KeyRound, MessageCircle, Phone, Search, Shield, UserRoundCog, Users, Wrench } from "lucide-react";
 import { BrandLockup } from "@/components/Logo";
@@ -121,11 +122,11 @@ export default function LoginPage() {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<StaffPerson | null>(null);
   const [techLoginOpen, setTechLoginOpen] = useState(false);
-  const [sharedEntry, setSharedEntry] = useState(false);
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
+  const [nextPath, setNextPath] = useState("/panel");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -133,13 +134,16 @@ export default function LoginPage() {
       setNotice("Tu sesión terminó. Elegí tu perfil e ingresá de nuevo.");
     }
     if (params.has("compartido")) {
-      setSharedEntry(true);
+      router.replace("/compartido");
+      return;
     }
+    const next = params.get("next");
+    if (next && next.startsWith("/panel")) setNextPath(next);
+
     fetch("/api/auth/me").then(async (response) => {
       if (!response.ok) return;
-      const wantShared = params.has("compartido") || window.sessionStorage.getItem("nutriips_entry") === "compartido";
-      window.sessionStorage.removeItem("nutriips_entry");
-      router.replace(wantShared ? "/panel/compartido" : "/panel");
+      const dest = next && next.startsWith("/panel") ? next : "/panel";
+      router.replace(dest);
     });
     fetch("/api/auth/staff")
       .then((response) => response.json())
@@ -177,20 +181,6 @@ export default function LoginPage() {
     setError("");
   }
 
-  function openSharedEntry() {
-    setSharedEntry(true);
-    setSelected(null);
-    setTechLoginOpen(false);
-    setPassword("");
-    setError("");
-    setQuery("");
-  }
-
-  function leaveSharedEntry() {
-    setSharedEntry(false);
-    clearPick();
-  }
-
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     if (!selected) return;
@@ -208,9 +198,7 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
-      if (sharedEntry) window.sessionStorage.setItem("nutriips_entry", "compartido");
-      else window.sessionStorage.removeItem("nutriips_entry");
-      router.push(sharedEntry ? "/panel/compartido" : "/panel");
+      router.push(nextPath.startsWith("/panel") ? nextPath : "/panel");
     } catch {
       setError("No hay conexión con el servidor");
       setLoading(false);
@@ -231,51 +219,7 @@ export default function LoginPage() {
         </header>
 
         <section className="mt-10 flex flex-1 flex-col">
-          {!selected && sharedEntry ? (
-            <div className="animate-fade-in">
-              <button
-                type="button"
-                onClick={leaveSharedEntry}
-                className="mb-6 inline-flex items-center gap-1.5 self-start text-sm font-medium text-ink-600 transition hover:text-ink-950"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Volver al inicio
-              </button>
-              <div className="max-w-xl">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-leaf-700">Acceso rápido</p>
-                <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight text-ink-950 sm:text-4xl">Panel compartido</h1>
-                <p className="mt-2 text-sm text-ink-600 sm:text-[15px]">
-                  Elegí tu nombre, escribí tu clave y entrá directo al tablero de turnos y derivaciones del departamento.
-                </p>
-              </div>
-              <div className="relative mt-8 max-w-md">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-500" />
-                <input
-                  className="input pl-10"
-                  placeholder="Buscar por nombre…"
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  aria-label="Buscar profesional"
-                />
-              </div>
-              {loadingStaff ? (
-                <p className="mt-10 text-sm text-ink-500">Cargando equipo…</p>
-              ) : clinical.length === 0 ? (
-                <div className="mt-10 flex items-center gap-3 rounded-2xl border border-ink-900/10 bg-white/80 px-4 py-5 text-sm text-ink-600">
-                  <Users className="h-5 w-5 text-ink-500" />
-                  No hay coincidencias. Probá otro nombre.
-                </div>
-              ) : (
-                <ul className="mt-8 grid gap-2.5 sm:grid-cols-2">
-                  {clinical.map((person) => (
-                    <li key={person.id}>
-                      <StaffTile person={person} onPick={pick} />
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          ) : !selected ? (
+          {!selected ? (
             <div className="animate-fade-in">
               <div className="max-w-xl">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-leaf-700">Acceso interno</p>
@@ -288,10 +232,14 @@ export default function LoginPage() {
               </div>
 
               {notice && <p className="mt-6 max-w-xl rounded-xl bg-amber-50 px-3 py-2.5 text-sm text-amber-800">{notice}</p>}
+              {nextPath !== "/panel" && (
+                <p className="mt-4 max-w-xl rounded-xl bg-leaf-50 px-3 py-2.5 text-sm text-leaf-800">
+                  Después de ingresar vas a abrir la ficha asignada automáticamente.
+                </p>
+              )}
 
-              <button
-                type="button"
-                onClick={openSharedEntry}
+              <Link
+                href="/compartido"
                 className="mt-8 flex w-full max-w-xl items-start gap-3 rounded-2xl border border-leaf-400/35 bg-gradient-to-r from-leaf-50 to-white px-4 py-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-leaf-500/50 hover:shadow-card focus-visible:outline-none"
               >
                 <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-leaf-600 text-white">
@@ -300,16 +248,16 @@ export default function LoginPage() {
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-ink-950">Panel compartido</span>
-                    <span className="rounded-md bg-leaf-600 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Rápido</span>
+                    <span className="rounded-md bg-leaf-600 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Sin clave</span>
                   </span>
                   <span className="mt-1 block text-sm leading-relaxed text-ink-600">
-                    Entrá directo al tablero de turnos y derivaciones. También sigue disponible dentro de cada perfil.
+                    Un click: ver turnos, derivaciones y asignar pacientes a cualquier nutricionista. También está en el menú de cada perfil.
                   </span>
                 </span>
                 <span className="self-center rounded-lg bg-white px-2 py-1 text-[11px] font-semibold text-leaf-700 ring-1 ring-leaf-600/15">
-                  Entrar
+                  Abrir
                 </span>
-              </button>
+              </Link>
 
               <div className="relative mt-8 max-w-md">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-500" />
@@ -464,18 +412,11 @@ export default function LoginPage() {
             <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center animate-scale-in">
               <button
                 type="button"
-                onClick={() => {
-                  if (selected.technical) setTechLoginOpen(false);
-                  else if (sharedEntry) {
-                    setSelected(null);
-                    setPassword("");
-                    setError("");
-                  } else clearPick();
-                }}
+                onClick={() => (selected.technical ? setTechLoginOpen(false) : clearPick())}
                 className="mb-6 inline-flex items-center gap-1.5 self-start text-sm font-medium text-ink-600 transition hover:text-ink-950"
               >
                 <ArrowLeft className="h-4 w-4" />
-                {selected.technical ? "Volver al soporte" : sharedEntry ? "Volver al panel compartido" : "Volver al listado"}
+                {selected.technical ? "Volver al soporte" : "Volver al listado"}
               </button>
 
               <div className="rounded-3xl border border-ink-900/[0.07] bg-white/95 p-6 shadow-card sm:p-8">
@@ -483,24 +424,13 @@ export default function LoginPage() {
                   {selected.avatarUrl ? (
                     <Avatar name={selected.name} src={selected.avatarUrl} size="lg" className="shadow-sm" />
                   ) : (
-                    <span
-                      className={cx(
-                        "grid h-14 w-14 place-items-center rounded-2xl text-base font-semibold",
-                        sharedEntry ? "bg-leaf-600 text-white" : avatarTone(selected.name)
-                      )}
-                    >
-                      {sharedEntry ? <FolderKanban className="h-6 w-6" /> : initials(selected.name)}
+                    <span className={cx("grid h-14 w-14 place-items-center rounded-2xl text-base font-semibold", avatarTone(selected.name))}>
+                      {initials(selected.name)}
                     </span>
                   )}
                   <div className="min-w-0">
                     <p className="text-xs font-semibold uppercase tracking-[0.14em] text-leaf-700">
-                      {selected.technical
-                        ? "Soporte técnico"
-                        : sharedEntry
-                          ? "Panel compartido"
-                          : selected.role === "chief"
-                            ? "Jefatura"
-                            : "Hola"}
+                      {selected.technical ? "Soporte técnico" : selected.role === "chief" ? "Jefatura" : "Hola"}
                     </p>
                     <h2 className="truncate font-display text-2xl font-semibold text-ink-950">{selected.name}</h2>
                     {selected.title && <p className="truncate text-sm text-ink-600">{selected.title}</p>}
@@ -509,9 +439,9 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                {sharedEntry && (
+                {nextPath !== "/panel" && (
                   <p className="mt-5 rounded-xl bg-leaf-50 px-3 py-2.5 text-sm text-leaf-800">
-                    Vas a entrar directo al tablero compartido. Después podés ir a tu consultorio desde el menú.
+                    Al ingresar vas a abrir la ficha del paciente asignado.
                   </p>
                 )}
                 {notice && <p className="mt-5 rounded-xl bg-amber-50 px-3 py-2.5 text-sm text-amber-800">{notice}</p>}
@@ -532,7 +462,7 @@ export default function LoginPage() {
                     </p>
                   )}
                   <Button type="submit" size="lg" loading={loading} icon={!loading ? <KeyRound className="h-4 w-4" /> : undefined} className="w-full">
-                    {loading ? "Ingresando…" : sharedEntry ? "Entrar al panel compartido" : "Ingresar al panel"}
+                    {loading ? "Ingresando…" : nextPath !== "/panel" ? "Ingresar y abrir ficha" : "Ingresar al panel"}
                   </Button>
                 </form>
               </div>

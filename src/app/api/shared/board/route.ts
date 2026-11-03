@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { getSessionNutritionist, unauthorized } from "@/lib/auth";
+import { avatarPublicUrl } from "@/lib/avatar";
 import { prisma } from "@/lib/db";
-import { forbidden, isClinical, staffRole } from "@/lib/roles";
+import { staffRole } from "@/lib/roles";
 
 export const runtime = "nodejs";
 
@@ -19,11 +19,8 @@ function dayBounds(isoDate: string) {
   return { start, end };
 }
 
+/** Público: tablero del día (sin clave). */
 export async function GET(request: Request) {
-  const user = await getSessionNutritionist();
-  if (!user) return unauthorized();
-  if (!isClinical(user)) return forbidden();
-
   const url = new URL(request.url);
   const date = url.searchParams.get("date") || new Date().toISOString().slice(0, 10);
   const { start, end } = dayBounds(date);
@@ -32,12 +29,17 @@ export async function GET(request: Request) {
   const [team, referrals, appointments] = await Promise.all([
     prisma.nutritionist.findMany({
       where: { NOT: { role: "technical" }, technical: false },
-      select: { id: true, name: true, title: true, role: true, license: true, email: true },
+      select: { id: true, name: true, title: true, role: true, license: true, email: true, avatarAt: true },
       orderBy: { name: "asc" },
     }),
     prisma.referral.findMany({
       where: {
-        OR: [{ scheduledAt: { gte: start, lt: end } }, { scheduledAt: null, status: "pendiente", createdAt: { gte: start, lt: end } }],
+        OR: [
+          { scheduledAt: { gte: start, lt: end } },
+          { status: "pendiente", scheduledAt: null },
+          { status: "pendiente", scheduledAt: { gte: start, lt: end } },
+          { status: "asignado", scheduledAt: null, updatedAt: { gte: start, lt: end } },
+        ],
       },
       include: {
         assignedTo: { select: { id: true, name: true } },
@@ -74,6 +76,7 @@ export async function GET(request: Request) {
         title: person.title,
         role: staffRole(person),
         license: person.license,
+        avatarUrl: avatarPublicUrl(person),
       },
       referrals: personReferrals,
       appointments: personAppointments,
@@ -89,7 +92,7 @@ export async function GET(request: Request) {
     totals: {
       referrals: referrals.length,
       appointments: appointments.length,
-      pending: referrals.filter((row) => row.status === "pendiente").length,
+      pending: referrals.filter((row) => row.status === "pendiente" || !row.assignedToId).length,
     },
   });
 }
