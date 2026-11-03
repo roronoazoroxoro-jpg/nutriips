@@ -81,7 +81,9 @@ export function SharedBoard({ embedded = false }: { embedded?: boolean }) {
   const [totals, setTotals] = useState({ referrals: 0, appointments: 0, pending: 0 });
   const [actorId, setActorId] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
+  const [prefillAssigneeId, setPrefillAssigneeId] = useState("");
   const [assignOpen, setAssignOpen] = useState<Referral | null>(null);
+  const [profileOpen, setProfileOpen] = useState<TeamMember | null>(null);
 
   useEffect(() => {
     try {
@@ -196,7 +198,7 @@ export function SharedBoard({ embedded = false }: { embedded?: boolean }) {
 
       {actor && (
         <p className="rounded-xl bg-leaf-50 px-3 py-2 text-sm text-leaf-800">
-          Operando como <strong>{actor.name}</strong>. Al asignar, la nutricionista recibe aviso y el paciente queda en su consultorio.
+          Operando como <strong>{actor.name}</strong>. Tocá el perfil de una nutricionista para derivarle un turno o cambiar asignación. Ella recibe aviso y el paciente queda en su consultorio.
         </p>
       )}
 
@@ -308,7 +310,15 @@ export function SharedBoard({ embedded = false }: { embedded?: boolean }) {
 
               return (
                 <Card key={column.nutritionist.id} className="overflow-hidden">
-                  <div className="flex items-center gap-3 border-b border-ink-900/[0.06] bg-sand-50/80 px-4 py-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!ensureActor()) return;
+                      setProfileOpen(column.nutritionist);
+                    }}
+                    className="flex w-full items-center gap-3 border-b border-ink-900/[0.06] bg-sand-50/80 px-4 py-3 text-left transition hover:bg-leaf-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-leaf-400"
+                    title={`Derivar o gestionar turnos de ${column.nutritionist.name}`}
+                  >
                     <Avatar name={column.nutritionist.name} src={column.nutritionist.avatarUrl} size="sm" />
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-semibold text-ink-950">{column.nutritionist.name}</p>
@@ -317,11 +327,26 @@ export function SharedBoard({ embedded = false }: { embedded?: boolean }) {
                         {column.nutritionist.title || "Lic. en Nutrición"}
                         {column.nutritionist.license ? ` · M.P. ${column.nutritionist.license}` : ""}
                       </p>
+                      <p className="mt-0.5 text-[11px] font-medium text-leaf-700">Tocá para derivar / gestionar</p>
                     </div>
                     <Badge tone="neutral">{rows.length}</Badge>
-                  </div>
+                  </button>
                   {rows.length === 0 ? (
-                    <p className="px-4 py-8 text-center text-sm text-ink-500">Sin turnos ni derivaciones en este día.</p>
+                    <div className="px-4 py-8 text-center">
+                      <p className="text-sm text-ink-500">Sin turnos ni derivaciones en este día.</p>
+                      <Button
+                        size="sm"
+                        className="mt-3"
+                        icon={<CalendarPlus className="h-4 w-4" />}
+                        onClick={() => {
+                          if (!ensureActor()) return;
+                          setPrefillAssigneeId(column.nutritionist.id);
+                          setCreateOpen(true);
+                        }}
+                      >
+                        Derivar a {column.nutritionist.name.split(/\s+/)[0]}
+                      </Button>
+                    </div>
                   ) : (
                     <div className="overflow-x-auto">
                       <table className="w-full min-w-[560px] text-left text-sm">
@@ -397,12 +422,17 @@ export function SharedBoard({ embedded = false }: { embedded?: boolean }) {
 
       <CreateReferralModal
         open={createOpen}
-        onClose={() => setCreateOpen(false)}
+        onClose={() => {
+          setCreateOpen(false);
+          setPrefillAssigneeId("");
+        }}
         team={team}
         actorId={actorId}
         defaultDate={date}
+        defaultAssigneeId={prefillAssigneeId}
         onSaved={() => {
           setCreateOpen(false);
+          setPrefillAssigneeId("");
           load();
         }}
       />
@@ -416,7 +446,86 @@ export function SharedBoard({ embedded = false }: { embedded?: boolean }) {
           load();
         }}
       />
+      <NutriProfileModal
+        person={profileOpen}
+        unassigned={unassigned}
+        onClose={() => setProfileOpen(null)}
+        onNewReferral={() => {
+          if (!profileOpen) return;
+          setPrefillAssigneeId(profileOpen.id);
+          setProfileOpen(null);
+          setCreateOpen(true);
+        }}
+        onAssignPending={(referral) => {
+          const target = profileOpen;
+          setProfileOpen(null);
+          setAssignOpen({
+            ...referral,
+            assignedTo: target ? { id: target.id, name: target.name } : referral.assignedTo,
+          });
+        }}
+      />
     </div>
+  );
+}
+
+function NutriProfileModal({
+  person,
+  unassigned,
+  onClose,
+  onNewReferral,
+  onAssignPending,
+}: {
+  person: TeamMember | null;
+  unassigned: Referral[];
+  onClose: () => void;
+  onNewReferral: () => void;
+  onAssignPending: (referral: Referral) => void;
+}) {
+  return (
+    <Modal
+      open={Boolean(person)}
+      onClose={onClose}
+      title={person?.name || "Nutricionista"}
+      description={person ? `${person.role === "chief" ? "Jefa · " : ""}${person.title || "Lic. en Nutrición"}` : undefined}
+      size="sm"
+    >
+      {person && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 rounded-2xl bg-sand-50 px-3 py-3">
+            <Avatar name={person.name} src={person.avatarUrl} size="lg" />
+            <div className="min-w-0">
+              <p className="font-semibold text-ink-950">{person.name}</p>
+              <p className="text-xs text-ink-500">{person.license ? `M.P. ${person.license}` : "Sin matrícula cargada"}</p>
+            </div>
+          </div>
+          <Button className="w-full" icon={<CalendarPlus className="h-4 w-4" />} onClick={onNewReferral}>
+            Derivar turno / paciente a {person.name.split(/\s+/).slice(0, 2).join(" ")}
+          </Button>
+          {unassigned.length > 0 && (
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-500">Pendientes para asignarle</p>
+              <ul className="max-h-48 space-y-2 overflow-y-auto">
+                {unassigned.map((row) => (
+                  <li key={row.id} className="flex items-center justify-between gap-2 rounded-xl border border-ink-900/10 px-3 py-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-ink-950">{row.fullName}</p>
+                      <p className="truncate text-xs text-ink-500">{row.reason || "Sin motivo"}</p>
+                    </div>
+                    <Button size="sm" variant="secondary" onClick={() => onAssignPending(row)}>
+                      Asignar
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <Button variant="secondary" className="w-full" onClick={onClose}>
+            Cerrar
+          </Button>
+        </div>
+      )}
+    </Modal>
   );
 }
 
@@ -426,6 +535,7 @@ function CreateReferralModal({
   team,
   actorId,
   defaultDate,
+  defaultAssigneeId = "",
   onSaved,
 }: {
   open: boolean;
@@ -433,6 +543,7 @@ function CreateReferralModal({
   team: TeamMember[];
   actorId: string;
   defaultDate: string;
+  defaultAssigneeId?: string;
   onSaved: () => void;
 }) {
   const toast = useToast();
@@ -459,11 +570,11 @@ function CreateReferralModal({
         birthDate: "",
         reason: "",
         notes: "",
-        assignedToId: "",
+        assignedToId: defaultAssigneeId || "",
         scheduledAt: `${defaultDate}T09:00`,
       });
     }
-  }, [open, defaultDate]);
+  }, [open, defaultDate, defaultAssigneeId]);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
