@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Building2, FolderKanban, KeyRound, MessageCircle, Phone, Search, Shield, UserRoundCog, Users, Wrench } from "lucide-react";
 import { BrandLockup } from "@/components/Logo";
+import { NutritionDecor } from "@/components/NutritionDecor";
 import { Avatar, Button, Input, cx } from "@/components/ui";
 
 type StaffPerson = {
@@ -207,26 +208,30 @@ export default function LoginPage() {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-sand-50">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(52,161,114,0.12),_transparent_55%),radial-gradient(ellipse_at_bottom_right,_rgba(22,53,43,0.08),_transparent_45%)]" />
-      <div className="pointer-events-none absolute inset-0 opacity-[0.35] [background-image:linear-gradient(rgba(13,31,24,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(13,31,24,0.03)_1px,transparent_1px)] [background-size:48px_48px]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(52,161,114,0.16),_transparent_52%),radial-gradient(ellipse_at_bottom_right,_rgba(80,101,168,0.12),_transparent_48%),linear-gradient(180deg,#f7fbf8_0%,#faf8f4_45%,#f3efe6_100%)]" />
+      <div className="pointer-events-none absolute inset-0 opacity-[0.28] [background-image:linear-gradient(rgba(13,31,24,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(13,31,24,0.035)_1px,transparent_1px)] [background-size:44px_44px]" />
+      <NutritionDecor />
 
-      <div className="relative mx-auto flex min-h-screen w-full max-w-5xl flex-col px-5 py-8 sm:px-8 sm:py-10">
-        <header>
-          <BrandLockup />
-          <p className="mt-3 text-sm text-ink-600">
-            <span className="font-semibold text-ink-800">NutriIPS</span> · consultorio digital del departamento
+      <div className="relative mx-auto flex min-h-screen w-full max-w-6xl flex-col px-5 pb-10 pt-8 sm:px-8 sm:pb-12 sm:pt-10">
+        <header className="animate-fade-in">
+          <BrandLockup size="hero" />
+          <p className="mt-5 max-w-xl text-base text-ink-600 sm:text-lg">
+            <span className="font-semibold text-ink-900">NutriIPS</span>
+            <span className="mx-2 text-leaf-500">·</span>
+            consultorio digital del Departamento de Nutrición
           </p>
+          <div className="mt-5 h-1 w-24 rounded-full bg-gradient-to-r from-leaf-500 to-[#5065A8]/70" />
         </header>
 
-        <section className="mt-10 flex flex-1 flex-col">
+        <section className="mt-10 flex flex-1 flex-col sm:mt-12">
           {!selected ? (
             <div className="animate-fade-in">
-              <div className="max-w-xl">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-leaf-700">Acceso interno</p>
-                <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight text-ink-950 sm:text-4xl">
+              <div className="max-w-2xl rounded-3xl border border-white/70 bg-white/75 p-5 shadow-card backdrop-blur-sm sm:p-7">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-leaf-700">Acceso interno</p>
+                <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight text-ink-950 sm:text-4xl md:text-[2.75rem]">
                   ¿Quién ingresa?
                 </h1>
-                <p className="mt-2 text-sm text-ink-600 sm:text-[15px]">
+                <p className="mt-2 max-w-lg text-sm leading-relaxed text-ink-600 sm:text-[15px]">
                   Tocá tu nombre y después escribí tu clave. Sin email, más rápido en el consultorio.
                 </p>
               </div>
@@ -240,7 +245,7 @@ export default function LoginPage() {
 
               <Link
                 href="/compartido"
-                className="mt-8 flex w-full max-w-xl items-start gap-3 rounded-2xl border border-leaf-400/35 bg-gradient-to-r from-leaf-50 to-white px-4 py-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-leaf-500/50 hover:shadow-card focus-visible:outline-none"
+                className="mt-8 flex w-full max-w-2xl items-start gap-3 rounded-2xl border border-leaf-400/40 bg-gradient-to-r from-leaf-50/95 to-white/90 px-4 py-4 text-left shadow-card backdrop-blur-sm transition hover:-translate-y-0.5 hover:border-leaf-500/55 hover:shadow-lift focus-visible:outline-none"
               >
                 <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-leaf-600 text-white">
                   <FolderKanban className="h-5 w-5" />
@@ -278,7 +283,7 @@ export default function LoginPage() {
                   No hay coincidencias. Probá otro nombre.
                 </div>
               ) : (
-                <div className="mt-8 space-y-8">
+                <div className="mt-8 space-y-8 rounded-3xl border border-white/60 bg-white/55 p-4 shadow-card backdrop-blur-sm sm:p-5">
                   {clinical.length > 0 && (
                     <ul className="grid gap-2.5 sm:grid-cols-2">
                       {clinical.map((person) => (

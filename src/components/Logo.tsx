@@ -46,16 +46,43 @@ export function Logo({ className = "h-8 w-8", title = "IPS Misiones · Nutrició
 }
 
 /** Lockup horizontal: sello + texto institucional + Nutrición. */
-export function BrandLockup({ className, compact = false }: { className?: string; compact?: boolean }) {
+export function BrandLockup({
+  className,
+  compact = false,
+  size = "md",
+}: {
+  className?: string;
+  compact?: boolean;
+  size?: "sm" | "md" | "hero";
+}) {
+  const tone = compact ? "sm" : size;
+  const logoClass = tone === "hero" ? "h-20 w-20 sm:h-24 sm:w-24" : tone === "sm" ? "h-10 w-10" : "h-14 w-14";
   return (
-    <div className={cx("flex items-center gap-3", className)}>
-      <Logo className={compact ? "h-10 w-10" : "h-14 w-14"} />
+    <div className={cx("flex items-center", tone === "hero" ? "gap-4 sm:gap-5" : "gap-3", className)}>
+      <Logo className={logoClass} />
       <div className="min-w-0 leading-tight">
-        <p className={cx("font-semibold uppercase tracking-[0.06em] text-ink-500", compact ? "text-[9px]" : "text-[10px]")}>
+        <p
+          className={cx(
+            "font-semibold uppercase tracking-[0.08em] text-ink-500",
+            tone === "hero" ? "text-[11px] sm:text-xs" : tone === "sm" ? "text-[9px]" : "text-[10px]"
+          )}
+        >
           Instituto de Previsión Social
         </p>
-        <p className={cx("font-display font-bold tracking-tight text-[#5065A8]", compact ? "text-lg" : "text-2xl")}>MISIONES</p>
-        <p className={cx("font-semibold uppercase tracking-[0.18em] text-leaf-700", compact ? "mt-0.5 text-[10px]" : "mt-1 text-xs")}>
+        <p
+          className={cx(
+            "font-display font-bold tracking-tight text-[#5065A8]",
+            tone === "hero" ? "text-3xl sm:text-4xl md:text-5xl" : tone === "sm" ? "text-lg" : "text-2xl"
+          )}
+        >
+          MISIONES
+        </p>
+        <p
+          className={cx(
+            "font-semibold uppercase tracking-[0.2em] text-leaf-700",
+            tone === "hero" ? "mt-1.5 text-sm sm:text-base" : tone === "sm" ? "mt-0.5 text-[10px]" : "mt-1 text-xs"
+          )}
+        >
           Nutrición
         </p>
       </div>
